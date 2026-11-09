@@ -455,7 +455,7 @@ every commit.
 | ----- | -------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | M1 ✅ | Domain core          | Puzzle model, index, two-way entry and cursor logic, `validatePuzzle`, golden fixture. All in core, fully tested. |
 | M2 ✅ | Single-player solver | Grid and clue UI, keyboard play, JSON import / manual entry editor with validation.                               |
-| M3    | Real-time rooms      | Room creation, persistence, snapshot and updates, presence, reconnects, shareable links.                          |
+| M3 ✅ | Real-time rooms      | Room creation, persistence, snapshot and updates, presence, reconnects, shareable links.                          |
 | M4    | Accounts             | Google sign-in (design discussion first), sessions, sign-in required to create rooms.                             |
 | M5    | Image parsing        | Parse endpoint, Claude integration, review screen, parser eval, then a cost review together.                      |
 | M6    | Polish               | Mobile input, accessibility pass, rate limits and spend cap, deploy.                                              |

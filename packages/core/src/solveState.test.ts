@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeLetter, type Letter } from './letters';
-import { emptySolveState, filledCount, getCell, setCell } from './solveState';
+import { applyEdit, emptySolveState, filledCount, getCell, setCell } from './solveState';
 
 const L = (s: string): Letter => {
   const letter = normalizeLetter(s);
@@ -44,5 +44,14 @@ describe('filledCount', () => {
     state = setCell(state, 1, L('A'));
     state = setCell(state, 5, L('B'));
     expect(filledCount(state)).toBe(2);
+  });
+});
+
+describe('applyEdit', () => {
+  it('applies a letter or a clear, and ignores null', () => {
+    const filled = applyEdit(emptySolveState, { cell: 4, value: L('Z') });
+    expect(getCell(filled, 4)).toBe('Z');
+    expect(getCell(applyEdit(filled, { cell: 4, value: null }), 4)).toBeNull();
+    expect(applyEdit(filled, null)).toBe(filled);
   });
 });

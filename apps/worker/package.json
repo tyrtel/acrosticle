@@ -5,9 +5,9 @@
   "description": "Cloudflare Worker + Durable Objects for real-time puzzle rooms.",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --var DEV_ALLOW_ANONYMOUS:true",
     "deploy": "wrangler deploy",
-    "cf-typegen": "wrangler types",
+    "cf-typegen": "wrangler types --strict-vars=false",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

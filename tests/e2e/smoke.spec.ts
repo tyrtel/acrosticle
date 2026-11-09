@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { blank, square, startSampleRoom } from './support';
 
 test('home page loads', async ({ page }) => {
   await page.goto('/');
@@ -6,24 +7,20 @@ test('home page loads', async ({ page }) => {
 });
 
 test('solving the sample fills the grid from a clue', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Try the sample puzzle' }).click();
+  await startSampleRoom(page);
   await expect(page.getByRole('heading', { name: 'Diplo-Crostic No. 37' })).toBeVisible();
 
   // Clue A's first blank is square 138; its second is grid square 5.
-  await page.getByRole('gridcell', { name: /^Clue A, letter 1 of 9, square 138,/ }).click();
+  await blank(page, 138).click();
   await page.keyboard.type('desdemona');
   await expect(page.getByRole('gridcell', { name: 'Square 5, clue A, E' })).toBeVisible();
 });
 
 test('grid squares are laid out in rows, like the printed grid', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Try the sample puzzle' }).click();
+  await startSampleRoom(page);
 
   const box = async (n: number) => {
-    const b = await page
-      .getByRole('gridcell', { name: new RegExp(`^Square ${n}, `) })
-      .boundingBox();
+    const b = await square(page, n).boundingBox();
     if (!b) throw new Error(`square ${n} is not visible`);
     return b;
   };

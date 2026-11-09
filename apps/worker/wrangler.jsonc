@@ -6,6 +6,10 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
 
+  // Development-only escape hatch until sign-in exists (M4). Never "true" when deployed;
+  // `npm run dev` turns it on with --var.
+  "vars": { "DEV_ALLOW_ANONYMOUS": "false" },
+
   // One PuzzleRoom Durable Object instance per shared solving session.
   "durable_objects": {
     "bindings": [{ "name": "PUZZLE_ROOM", "class_name": "PuzzleRoom" }],

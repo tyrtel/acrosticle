@@ -1,5 +1,10 @@
 .grid {
-  --cell: clamp(1.6rem, 4.2vw, 2.6rem);
+  /*
+   * Square size: fill the space the page layout gives the grid (--grid-space,
+   * default the viewport), between a readable minimum and a comfortable maximum.
+   * On narrow screens the grid scrolls sideways rather than shrinking further.
+   */
+  --cell: clamp(1.75rem, calc((var(--grid-space, 100vw) - 3rem) / var(--columns, 20)), 3.25rem);
   display: inline-flex;
   flex-direction: column;
   border: 2px solid var(--border-strong);
@@ -67,6 +72,22 @@
   background: var(--select);
 }
 
+.peer {
+  outline: 3px solid var(--peer-color);
+  outline-offset: -3px;
+}
+
+/* Who's here: shown on hover, and when our own cursor is on the same square (touch screens). */
+.peerTag {
+  display: none;
+  font-size: calc(var(--cell) * 0.32);
+}
+
+.peer:hover .peerTag,
+.peer.selected .peerTag {
+  display: flex;
+}
+
 .block.selected {
   outline: 3px solid var(--select);
   outline-offset: -3px;
@@ -75,8 +96,8 @@
 .label {
   position: absolute;
   top: 1px;
-  right: 2px;
-  font-size: calc(var(--cell) * 0.24);
+  right: 3px;
+  font-size: calc(var(--cell) * 0.25);
   line-height: 1;
   color: var(--text-muted);
 }

@@ -1,7 +1,7 @@
 import type { Letter } from './letters';
 import type { CellNumber, ClueLabel } from './puzzle';
 import type { PuzzleIndex } from './puzzleIndex';
-import { getCell, setCell, type SolveState } from './solveState';
+import { getCell, type CellEdit, type SolveState } from './solveState';
 
 /** Which view the solver is typing in. It decides where the cursor moves next. */
 export type View = 'grid' | 'clue';
@@ -15,8 +15,9 @@ export interface Selection {
   readonly view: View;
 }
 
+/** What a key press does: an optional change to one cell, and where the cursor goes. */
 export interface EditResult {
-  readonly state: SolveState;
+  readonly edit: CellEdit | null;
   readonly selection: Selection;
 }
 
@@ -100,14 +101,9 @@ export function jumpToClue(
 }
 
 /** Types a letter at the cursor, then advances within the active view. */
-export function enterLetter(
-  index: PuzzleIndex,
-  state: SolveState,
-  selection: Selection,
-  letter: Letter,
-): EditResult {
+export function enterLetter(index: PuzzleIndex, selection: Selection, letter: Letter): EditResult {
   return {
-    state: setCell(state, selection.cell, letter),
+    edit: { cell: selection.cell, value: letter },
     selection: step(index, selection, 1),
   };
 }
@@ -118,10 +114,12 @@ export function enterLetter(
  */
 export function erase(index: PuzzleIndex, state: SolveState, selection: Selection): EditResult {
   if (getCell(state, selection.cell) !== null) {
-    return { state: setCell(state, selection.cell, null), selection };
+    return { edit: { cell: selection.cell, value: null }, selection };
   }
   const previous = step(index, selection, -1);
-  return { state: setCell(state, previous.cell, null), selection: previous };
+  if (previous.cell === selection.cell) return { edit: null, selection };
+  const edit = getCell(state, previous.cell) === null ? null : { cell: previous.cell, value: null };
+  return { edit, selection: previous };
 }
 
 /**

@@ -1,43 +1,71 @@
 import type { Puzzle } from '@acrosticle/core';
+import { roomPath } from '@acrosticle/protocol';
 import { useState } from 'react';
 import { ImportPuzzle, ReviewPuzzle } from './features/editor';
-import { Solver } from './features/solver';
+import { createRoom, RoomPage } from './features/room';
+import { navigate, useRoute } from './lib/router';
 import { loadSamplePuzzle } from './lib/samplePuzzles';
 
-type Screen =
-  | { readonly kind: 'home' }
-  | { readonly kind: 'import' }
-  | { readonly kind: 'review'; readonly puzzle: Puzzle }
-  | { readonly kind: 'solve'; readonly puzzle: Puzzle };
-
 export function App() {
-  const [screen, setScreen] = useState<Screen>({ kind: 'home' });
+  const route = useRoute();
 
   return (
     <main className="app">
-      <h1>Acrosticle</h1>
-      {screen.kind !== 'home' && (
-        <p>
-          <button type="button" onClick={() => setScreen({ kind: 'home' })}>
-            ← Home
-          </button>
-        </p>
-      )}
-      {renderScreen(screen, setScreen)}
+      <h1>
+        <a href="/" className="home-link" onClick={(e) => (e.preventDefault(), navigate('/'))}>
+          Acrosticle
+        </a>
+      </h1>
+      {route.kind === 'home' && <Home />}
+      {route.kind === 'room' && <RoomPage key={route.roomId} roomId={route.roomId} />}
+      {route.kind === 'not-found' && <p role="alert">There&apos;s nothing at this address.</p>}
     </main>
   );
 }
 
-function renderScreen(screen: Screen, setScreen: (screen: Screen) => void) {
-  switch (screen.kind) {
-    case 'home':
-      return (
+type HomeScreen =
+  | { readonly kind: 'start' }
+  | { readonly kind: 'import' }
+  | { readonly kind: 'review'; readonly puzzle: Puzzle };
+
+/** Start page: open the sample, or import and review a puzzle, then create a room for it. */
+function Home() {
+  const [screen, setScreen] = useState<HomeScreen>({ kind: 'start' });
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const startRoom = async (puzzle: Puzzle) => {
+    setCreating(true);
+    setError(null);
+    const result = await createRoom(puzzle);
+    setCreating(false);
+    if (result.ok) navigate(roomPath(result.value));
+    else setError(result.error);
+  };
+
+  return (
+    <>
+      {screen.kind !== 'start' && (
+        <p>
+          <button type="button" onClick={() => setScreen({ kind: 'start' })}>
+            ← Back
+          </button>
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      )}
+      {creating && <p role="status">Creating your room…</p>}
+      {screen.kind === 'start' && (
         <>
           <p>Solve acrostic puzzles together, in real time.</p>
           <p className="home-actions">
             <button
               type="button"
-              onClick={() => setScreen({ kind: 'solve', puzzle: loadSamplePuzzle() })}
+              disabled={creating}
+              onClick={() => void startRoom(loadSamplePuzzle())}
             >
               Try the sample puzzle
             </button>{' '}
@@ -46,17 +74,13 @@ function renderScreen(screen: Screen, setScreen: (screen: Screen) => void) {
             </button>
           </p>
         </>
-      );
-    case 'import':
-      return <ImportPuzzle onImport={(puzzle) => setScreen({ kind: 'review', puzzle })} />;
-    case 'review':
-      return (
-        <ReviewPuzzle
-          initialPuzzle={screen.puzzle}
-          onStart={(puzzle) => setScreen({ kind: 'solve', puzzle })}
-        />
-      );
-    case 'solve':
-      return <Solver puzzle={screen.puzzle} />;
-  }
+      )}
+      {screen.kind === 'import' && (
+        <ImportPuzzle onImport={(puzzle) => setScreen({ kind: 'review', puzzle })} />
+      )}
+      {screen.kind === 'review' && (
+        <ReviewPuzzle initialPuzzle={screen.puzzle} onStart={(puzzle) => void startRoom(puzzle)} />
+      )}
+    </>
+  );
 }

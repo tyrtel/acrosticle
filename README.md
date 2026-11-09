@@ -31,8 +31,14 @@ npm run dev
 ```
 
 - Web app: <http://localhost:5173>
-- Worker: <http://localhost:8787> (the web dev server proxies `/api` and WebSockets to it)
+- Worker: <http://localhost:8787> (API only; the web dev server proxies `/api` and WebSockets to it)
 - Health check: <http://localhost:5173/api/health>
+
+To try solving together, click **Try the sample puzzle**, then open the room's link in a second browser
+window (or a private window, which gets its own name).
+
+Creating rooms will require signing in (coming soon). Until then, `npm run dev` allows anonymous room
+creation through the development-only `DEV_ALLOW_ANONYMOUS` variable.
 
 ## Scripts
 
@@ -50,7 +56,8 @@ npm run dev
 | `npm run format`           | Format with Prettier                               |
 | `npm run check`            | Everything CI runs (typecheck, lint, format, test) |
 
-The first time you run end-to-end tests, install a browser: `npx playwright install chromium`.
+The first time you run end-to-end tests, install a browser: `npx playwright install chromium`. The
+e2e tests start their own servers on ports 5174 and 8788, so they work even while `npm run dev` is running.
 
 ## Project structure
 

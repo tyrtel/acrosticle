@@ -1,7 +1,16 @@
-import { parseCompactGrid, type Puzzle } from '@acrosticle/core';
+import {
+  applyEdit,
+  emptySolveState,
+  parseCompactGrid,
+  type CellEdit,
+  type CellNumber,
+  type Puzzle,
+} from '@acrosticle/core';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { useState } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import type { PeerMap } from '../../components/PeerTag';
 import { Solver } from './Solver';
 
 //   1A 2B  #  3A
@@ -28,9 +37,32 @@ const blank = (n: number) =>
     name: new RegExp(`^Clue [A-Z]+, letter \\d+ of \\d+, square ${n}, `),
   });
 
-function setup() {
+const puzzle = tinyPuzzle();
+
+/** The solver with local letter state, standing in for a room. */
+function LocalSolver(props: {
+  peers?: PeerMap;
+  onEdit?: (edit: CellEdit) => void;
+  onSelectionChange?: (cell: CellNumber) => void;
+}) {
+  const [solve, setSolve] = useState(emptySolveState);
+  return (
+    <Solver
+      puzzle={puzzle}
+      solve={solve}
+      onEdit={(edit) => {
+        props.onEdit?.(edit);
+        setSolve((s) => applyEdit(s, edit));
+      }}
+      peers={props.peers}
+      onSelectionChange={props.onSelectionChange}
+    />
+  );
+}
+
+function setup(props: Parameters<typeof LocalSolver>[0] = {}) {
   const user = userEvent.setup();
-  render(<Solver puzzle={tinyPuzzle()} />);
+  render(<LocalSolver {...props} />);
   return {
     user,
     grid: screen.getByRole('grid', { name: 'Quotation grid' }),
@@ -138,5 +170,48 @@ describe('Solver', () => {
     const rows = within(screen.getByRole('grid', { name: 'Clues' })).getAllByRole('row');
     expect(rows[1]?.className).toMatch(/current/);
     expect(rows[0]?.className).not.toMatch(/current/);
+  });
+
+  it('reports each edit, and nothing for plain cursor moves', async () => {
+    const onEdit = vi.fn();
+    const { user } = setup({ onEdit });
+    await user.click(square(1));
+    await user.keyboard('{ArrowRight}q{Backspace}');
+    expect(onEdit.mock.calls).toEqual([[{ cell: 2, value: 'Q' }], [{ cell: 2, value: null }]]);
+  });
+
+  it('reports cursor moves for sharing with others', async () => {
+    const onSelectionChange = vi.fn();
+    const { user } = setup({ onSelectionChange });
+    expect(onSelectionChange).toHaveBeenLastCalledWith(1);
+    await user.click(square(4));
+    expect(onSelectionChange).toHaveBeenLastCalledWith(4);
+  });
+
+  it("outlines other solvers' cursors in their color, in both views", () => {
+    setup({ peers: new Map([[3, [{ id: 'bo', name: 'Bo Diddley', color: '#123456' }]]]) });
+    expect(square(3).style.getPropertyValue('--peer-color')).toBe('#123456');
+    expect(blank(3).style.getPropertyValue('--peer-color')).toBe('#123456');
+    expect(square(4).style.getPropertyValue('--peer-color')).toBe('');
+  });
+
+  it('says who is on a square, with initials for the hover tag', () => {
+    const peers: PeerMap = new Map([
+      [
+        3,
+        [
+          { id: 'bo', name: 'Bo Diddley', color: '#123456' },
+          { id: 'cy', name: 'Cy', color: '#654321' },
+        ],
+      ],
+    ]);
+    setup({ peers });
+    expect(square(3)).toHaveAccessibleName('Square 3, clue A, empty, Bo Diddley and Cy are here');
+    expect(square(3)).toHaveAttribute('title', 'Bo Diddley and Cy are here');
+    expect(blank(3)).toHaveAccessibleName(
+      'Clue A, letter 1 of 3, square 3, empty, Bo Diddley and Cy are here',
+    );
+    expect(square(3)).toHaveTextContent('BDC');
+    expect(square(4)).not.toHaveAttribute('title');
   });
 });

@@ -13,15 +13,17 @@ export const PuzzleFile = z.object({
   source: z.string().optional(),
   grid: z.object({
     columns: z.number().int().positive(),
-    rows: z.array(z.string()).min(1),
+    rows: z.array(z.string()).min(1).readonly(),
   }),
-  clues: z.array(
-    z.object({
-      label: z.string(),
-      text: z.string(),
-      cells: z.array(z.number().int()),
-    }),
-  ),
+  clues: z
+    .array(
+      z.object({
+        label: z.string(),
+        text: z.string(),
+        cells: z.array(z.number().int()).readonly(),
+      }),
+    )
+    .readonly(),
 });
 export type PuzzleFile = z.infer<typeof PuzzleFile>;
 

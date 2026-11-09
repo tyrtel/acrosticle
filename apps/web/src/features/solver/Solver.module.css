@@ -15,8 +15,10 @@
 }
 
 .layout {
+  /* Space for the grid beside a clue column of about 22rem. */
+  --grid-space: calc(min(100vw, 90rem) - 26rem);
   display: grid;
-  grid-template-columns: auto minmax(18rem, 1fr);
+  grid-template-columns: auto minmax(20rem, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -39,8 +41,9 @@
   color: var(--text-muted);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .layout {
+    --grid-space: 100vw;
     grid-template-columns: minmax(0, 1fr);
   }
 

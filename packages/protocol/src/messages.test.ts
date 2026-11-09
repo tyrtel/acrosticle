@@ -1,47 +1,92 @@
+import type { Letter } from '@acrosticle/core';
 import { describe, expect, it } from 'vitest';
-import { encodeMessage, parseClientMessage, parseServerMessage } from './messages';
+import {
+  encodeMessage,
+  MAX_NAME_LENGTH,
+  parseClientMessage,
+  parseServerMessage,
+  type ServerMessage,
+} from './messages';
+
+const json = (value: unknown) => JSON.stringify(value);
 
 describe('parseClientMessage', () => {
-  it('parses a valid cell/set message', () => {
-    const result = parseClientMessage('{"type":"cell/set","cell":4,"value":"Q"}');
-    expect(result).toEqual({ ok: true, value: { type: 'cell/set', cell: 4, value: 'Q' } });
+  it('parses join, trimming the name', () => {
+    expect(parseClientMessage(json({ type: 'join', name: '  Ada ' }))).toEqual({
+      ok: true,
+      value: { type: 'join', name: 'Ada' },
+    });
   });
 
-  it('accepts null to clear a cell', () => {
-    const result = parseClientMessage('{"type":"cell/set","cell":4,"value":null}');
-    expect(result.ok).toBe(true);
+  it('parses cell/set with a letter or null', () => {
+    const set = { type: 'cell/set', cell: 4, value: 'Q', clientSeq: 0 };
+    expect(parseClientMessage(json(set))).toEqual({ ok: true, value: set });
+    expect(parseClientMessage(json({ ...set, value: null })).ok).toBe(true);
   });
 
-  it('parses ping', () => {
-    expect(parseClientMessage('{"type":"ping"}')).toEqual({ ok: true, value: { type: 'ping' } });
+  it('parses presence updates and ping', () => {
+    expect(parseClientMessage(json({ type: 'presence/update', cell: null })).ok).toBe(true);
+    expect(parseClientMessage(json({ type: 'presence/update', cell: 3 })).ok).toBe(true);
+    expect(parseClientMessage(json({ type: 'ping' }))).toEqual({
+      ok: true,
+      value: { type: 'ping' },
+    });
   });
 
   it('rejects malformed JSON', () => {
     expect(parseClientMessage('{not json')).toEqual({ ok: false, error: 'Invalid JSON' });
   });
 
+  const set = { type: 'cell/set', cell: 1, value: 'A', clientSeq: 1 };
   it.each([
-    ['unknown type', '{"type":"nope"}'],
-    ['lowercase letter', '{"type":"cell/set","cell":1,"value":"q"}'],
-    ['multi-char value', '{"type":"cell/set","cell":1,"value":"AB"}'],
-    ['zero cell', '{"type":"cell/set","cell":0,"value":"A"}'],
-    ['fractional cell', '{"type":"cell/set","cell":1.5,"value":"A"}'],
-    ['missing cell', '{"type":"cell/set","value":"A"}'],
-  ])('rejects %s', (_label, raw) => {
-    expect(parseClientMessage(raw).ok).toBe(false);
+    ['unknown type', { type: 'nope' }],
+    ['lowercase letter', { ...set, value: 'q' }],
+    ['multi-char value', { ...set, value: 'AB' }],
+    ['zero cell', { ...set, cell: 0 }],
+    ['fractional cell', { ...set, cell: 1.5 }],
+    ['missing clientSeq', { type: 'cell/set', cell: 1, value: 'A' }],
+    ['negative clientSeq', { ...set, clientSeq: -1 }],
+    ['blank name', { type: 'join', name: '   ' }],
+    ['long name', { type: 'join', name: 'x'.repeat(MAX_NAME_LENGTH + 1) }],
+  ])('rejects %s', (_label, message) => {
+    expect(parseClientMessage(json(message)).ok).toBe(false);
   });
 });
 
 describe('parseServerMessage', () => {
-  it('round-trips through encodeMessage', () => {
-    const raw = encodeMessage({ type: 'error', message: 'boom' });
-    expect(parseServerMessage(raw)).toEqual({
-      ok: true,
-      value: { type: 'error', message: 'boom' },
-    });
+  const snapshot: ServerMessage = {
+    type: 'snapshot',
+    puzzle: {
+      grid: { columns: 2, rows: ['1A 2A'] },
+      clues: [{ label: 'A', text: 'x', cells: [1, 2] }],
+    },
+    cells: [[1, 'Q' as Letter]],
+    version: 3,
+    you: 'm1',
+    members: [{ id: 'm1', name: 'Ada', color: '#c00' }],
+    presence: [['m1', 2]],
+  };
+
+  it.each<[string, ServerMessage]>([
+    ['snapshot', snapshot],
+    [
+      'cell/updated',
+      { type: 'cell/updated', cell: 2, value: null, version: 4, by: 'm1', clientSeq: 7 },
+    ],
+    ['presence', { type: 'presence', member: 'm1', cell: null }],
+    ['member/joined', { type: 'member/joined', member: { id: 'm2', name: 'Bo', color: '#00c' } }],
+    ['member/left', { type: 'member/left', member: 'm2' }],
+    ['pong', { type: 'pong' }],
+    ['error', { type: 'error', message: 'boom' }],
+  ])('round-trips %s through encodeMessage', (_label, message) => {
+    expect(parseServerMessage(encodeMessage(message))).toEqual({ ok: true, value: message });
+  });
+
+  it('rejects a snapshot with a bad letter', () => {
+    expect(parseServerMessage(json({ ...snapshot, cells: [[1, 'q']] })).ok).toBe(false);
   });
 
   it('rejects client-only messages', () => {
-    expect(parseServerMessage('{"type":"ping"}').ok).toBe(false);
+    expect(parseServerMessage(json({ type: 'ping' })).ok).toBe(false);
   });
 });

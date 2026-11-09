@@ -1,5 +1,6 @@
 import type { Grid, GridSquare } from '@acrosticle/core';
-import { memo, type KeyboardEventHandler, type Ref } from 'react';
+import { memo, type CSSProperties, type KeyboardEventHandler, type Ref } from 'react';
+import { PeerTag, type Peer } from '../PeerTag';
 import styles from './PuzzleGrid.module.css';
 
 /** How one square should look. Highlight tones are mutually exclusive; `selected` wins. */
@@ -9,6 +10,10 @@ export interface SquareView {
   readonly letter?: string | null | undefined;
   readonly selected?: boolean | undefined;
   readonly tone?: 'word' | 'clue' | 'error' | 'warning' | 'info' | undefined;
+  /** Other solvers whose cursor is here: outlined in the first one's color, tagged on hover. */
+  readonly peers?: readonly Peer[] | undefined;
+  /** Native tooltip text. */
+  readonly title?: string | undefined;
 }
 
 export interface PuzzleGridProps {
@@ -52,6 +57,7 @@ export function PuzzleGrid({
       aria-activedescendant={activeDescendant}
       tabIndex={focusable ? 0 : undefined}
       className={styles.grid}
+      style={{ '--columns': grid.columns } as CSSProperties}
       onKeyDown={onKeyDown}
     >
       {rows.map((row, r) => (
@@ -68,6 +74,8 @@ export function PuzzleGrid({
                 letter={view.letter ?? null}
                 selected={view.selected ?? false}
                 tone={view.tone}
+                peers={view.peers}
+                title={view.title}
                 onClick={onSquareClick}
               />
             );
@@ -86,6 +94,8 @@ interface SquareProps {
   readonly letter: string | null;
   readonly selected: boolean;
   readonly tone: SquareView['tone'];
+  readonly peers: readonly Peer[] | undefined;
+  readonly title: string | undefined;
   readonly onClick: ((gridIndex: number) => void) | undefined;
 }
 
@@ -104,22 +114,28 @@ const Square = memo(function Square({
   letter,
   selected,
   tone,
+  peers,
+  title,
   onClick,
 }: SquareProps) {
+  const peerColor = peers?.[0]?.color;
   const classes = [
     styles.square,
     KIND_CLASS[square.kind],
     tone && styles[tone],
     selected && styles.selected,
     onClick && styles.clickable,
+    peerColor && styles.peer,
   ];
   return (
     <div
       role="gridcell"
       id={id}
       aria-label={ariaLabel}
+      title={title}
       aria-selected={square.kind === 'letter' ? selected : undefined}
       className={classes.filter(Boolean).join(' ')}
+      style={peerColor ? ({ '--peer-color': peerColor } as CSSProperties) : undefined}
       onClick={onClick && (() => onClick(gridIndex))}
     >
       {square.kind === 'letter' && (
@@ -134,6 +150,7 @@ const Square = memo(function Square({
         </>
       )}
       {square.kind === 'punctuation' && <span aria-hidden="true">{square.char}</span>}
+      {peers && peers.length > 0 && <PeerTag peers={peers} className={styles.peerTag} />}
     </div>
   );
 });

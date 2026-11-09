@@ -11,7 +11,7 @@ import {
   type Selection,
 } from './navigation';
 import { buildPuzzleIndex } from './puzzleIndex';
-import { emptySolveState, getCell, setCell } from './solveState';
+import { emptySolveState, setCell } from './solveState';
 
 //   1A 2B  #  3A
 //   4B  #  5A
@@ -98,11 +98,11 @@ describe('jumpToClue', () => {
 
 describe('enterLetter', () => {
   it('fills the cell and advances within the active view', () => {
-    const fromGrid = enterLetter(index, emptySolveState, inGrid(1), letter('Q'));
-    expect(getCell(fromGrid.state, 1)).toBe('Q');
+    const fromGrid = enterLetter(index, inGrid(1), letter('Q'));
+    expect(fromGrid.edit).toEqual({ cell: 1, value: 'Q' });
     expect(fromGrid.selection).toEqual(inGrid(2));
 
-    const fromClue = enterLetter(index, emptySolveState, inClue(1), letter('Q'));
+    const fromClue = enterLetter(index, inClue(1), letter('Q'));
     expect(fromClue.selection).toEqual(inClue(5));
   });
 });
@@ -111,20 +111,26 @@ describe('erase', () => {
   it('clears a filled cell and stays put', () => {
     const state = setCell(emptySolveState, 2, letter('B'));
     const result = erase(index, state, inGrid(2));
-    expect(getCell(result.state, 2)).toBeNull();
+    expect(result.edit).toEqual({ cell: 2, value: null });
     expect(result.selection).toEqual(inGrid(2));
   });
 
   it('on an empty cell, moves back and clears the previous cell', () => {
     const state = setCell(emptySolveState, 3, letter('C'));
     const result = erase(index, state, inClue(1));
-    expect(getCell(result.state, 3)).toBeNull();
+    expect(result.edit).toEqual({ cell: 3, value: null });
     expect(result.selection).toEqual(inClue(3));
+  });
+
+  it('moves back without an edit when the previous cell is already empty', () => {
+    const result = erase(index, emptySolveState, inGrid(2));
+    expect(result.edit).toBeNull();
+    expect(result.selection).toEqual(inGrid(1));
   });
 
   it('does nothing at the start of an empty run', () => {
     const result = erase(index, emptySolveState, inGrid(1));
-    expect(result.state).toBe(emptySolveState);
+    expect(result.edit).toBeNull();
     expect(result.selection).toEqual(inGrid(1));
   });
 });

@@ -1,6 +1,6 @@
 # ADR 0002: Collaboration model
 
-- **Status:** Proposed (confirm during planning)
+- **Status:** Accepted (implemented in M3, 2026-11-09)
 - **Date:** 2026-11-09
 
 ## Context

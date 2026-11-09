@@ -1,37 +1,45 @@
 import {
   buildPuzzleIndex,
   describeSelection,
-  emptySolveState,
+  type CellEdit,
   type CellNumber,
   type Puzzle,
+  type SolveState,
 } from '@acrosticle/core';
-import { useCallback, useEffect, useMemo, useReducer, useRef, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import type { PeerMap } from '../../components/PeerTag';
 import { AcrosticBar } from './AcrosticBar';
 import { ClueList } from './ClueList';
 import { clueBlankId, gridSquareId } from './elementIds';
 import { Grid } from './Grid';
 import { keyToAction } from './keymap';
 import styles from './Solver.module.css';
-import {
-  initialSolverState,
-  reduceSolver,
-  type SolverAction,
-  type SolverState,
-} from './solverReducer';
+import { initialSelection, reduceSolver, type SolverAction } from './solverReducer';
+
+const NO_PEERS: PeerMap = new Map();
 
 export interface SolverProps {
   /** A puzzle that passes `validatePuzzle` without errors. */
   readonly puzzle: Puzzle;
+  /** The letters to show. The solver doesn't own them; it reports edits instead. */
+  readonly solve: SolveState;
+  readonly onEdit: (edit: CellEdit) => void;
+  /** Other solvers' cursors. */
+  readonly peers?: PeerMap;
+  /** Called with the selected cell whenever the cursor moves. */
+  readonly onSelectionChange?: (cell: CellNumber) => void;
 }
 
-/** The single-player solving screen: grid and clues, kept in sync. */
-export function Solver({ puzzle }: SolverProps) {
+/** The solving screen: grid and clues, kept in sync. Owns only the cursor. */
+export function Solver({
+  puzzle,
+  solve,
+  onEdit,
+  peers = NO_PEERS,
+  onSelectionChange,
+}: SolverProps) {
   const index = useMemo(() => buildPuzzleIndex(puzzle), [puzzle]);
-  const [{ solve, selection }, dispatch] = useReducer(
-    (state: SolverState, action: SolverAction) => reduceSolver(index, state, action),
-    undefined,
-    () => initialSolverState(index, emptySolveState),
-  );
+  const [selection, setSelection] = useState(() => initialSelection(index));
   const context = describeSelection(index, selection);
 
   const gridRef = useRef<HTMLDivElement>(null);
@@ -49,6 +57,19 @@ export function Solver({ puzzle }: SolverProps) {
     document.getElementById(id)?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
   }, [selection]);
 
+  useEffect(() => {
+    onSelectionChange?.(selection.cell);
+  }, [selection.cell, onSelectionChange]);
+
+  const apply = useCallback(
+    (action: SolverAction) => {
+      const result = reduceSolver(index, solve, selection, action);
+      setSelection(result.selection);
+      if (result.edit) onEdit(result.edit);
+    },
+    [index, solve, selection, onEdit],
+  );
+
   const cluePosition = index.cluePositionOf(context.clue);
   const lastCluePosition = index.clues.length - 1;
   const onKeyDown = useCallback(
@@ -63,18 +84,12 @@ export function Solver({ puzzle }: SolverProps) {
           (event.shiftKey && cluePosition === 0));
       if (tabbingOut) return;
       event.preventDefault();
-      dispatch(action);
+      apply(action);
     },
-    [selection.view, cluePosition, lastCluePosition],
+    [apply, selection.view, cluePosition, lastCluePosition],
   );
-  const selectInGrid = useCallback(
-    (cell: CellNumber) => dispatch({ type: 'select', cell, view: 'grid' }),
-    [],
-  );
-  const selectInClues = useCallback(
-    (cell: CellNumber) => dispatch({ type: 'select', cell, view: 'clue' }),
-    [],
-  );
+  const selectInGrid = useCallback((cell: CellNumber) => setSelection({ cell, view: 'grid' }), []);
+  const selectInClues = useCallback((cell: CellNumber) => setSelection({ cell, view: 'clue' }), []);
 
   return (
     <div className={styles.solver}>
@@ -92,6 +107,7 @@ export function Solver({ puzzle }: SolverProps) {
             selectedCell={selection.cell}
             wordCells={context.wordCells}
             clueCells={context.clueCells}
+            peers={peers}
             active={selection.view === 'grid'}
             onSelect={selectInGrid}
             onKeyDown={onKeyDown}
@@ -107,6 +123,7 @@ export function Solver({ puzzle }: SolverProps) {
             solve={solve}
             selectedCell={selection.cell}
             selectedClue={context.clue}
+            peers={peers}
             active={selection.view === 'clue'}
             onSelect={selectInClues}
             onKeyDown={onKeyDown}

@@ -132,20 +132,20 @@ Rules:
 
 Use Node 24 (`nvm use`). Run from the repo root.
 
-| Command                         | Purpose                                                                      |
-| ------------------------------- | ---------------------------------------------------------------------------- |
-| `npm install`                   | Install all workspaces                                                       |
-| `npm run dev`                   | Vite (http://localhost:5173) + `wrangler dev` (:8787), `/api` proxied        |
-| `npm test`                      | All Vitest projects (unit + integration)                                     |
-| `npm run test:unit`             | Unit tests only                                                              |
-| `npm run test:integration`      | Integration tests only                                                       |
-| `npm run test:coverage`         | Tests with coverage + thresholds                                             |
-| `npm run test:e2e`              | Playwright (first run: `npx playwright install chromium`)                    |
-| `npm run typecheck`             | `tsc --noEmit` everywhere                                                    |
-| `npm run lint` / `lint:fix`     | ESLint                                                                       |
-| `npm run format`                | Prettier write                                                               |
-| `npm run check`                 | typecheck + lint + format check + tests — **run before declaring work done** |
-| `npx vitest run --project core` | Run a single project (`core`, `protocol`, `web`, `worker`)                   |
+| Command                         | Purpose                                                                               |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| `npm install`                   | Install all workspaces                                                                |
+| `npm run dev`                   | Vite (http://localhost:5173) + `wrangler dev` (:8787), `/api` proxied                 |
+| `npm test`                      | All Vitest projects (unit + integration)                                              |
+| `npm run test:unit`             | Unit tests only                                                                       |
+| `npm run test:integration`      | Integration tests only                                                                |
+| `npm run test:coverage`         | Tests with coverage + thresholds                                                      |
+| `npm run test:e2e`              | Playwright, on its own ports 5174/8788 (first run: `npx playwright install chromium`) |
+| `npm run typecheck`             | `tsc --noEmit` everywhere                                                             |
+| `npm run lint` / `lint:fix`     | ESLint                                                                                |
+| `npm run format`                | Prettier write                                                                        |
+| `npm run check`                 | typecheck + lint + format check + tests — **run before declaring work done**          |
+| `npx vitest run --project core` | Run a single project (`core`, `protocol`, `web`, `worker`)                            |
 
 ## Definition of done
 

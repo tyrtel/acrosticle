@@ -1,6 +1,7 @@
 import type { CellNumber, GridSquare, PuzzleIndex, SolveState } from '@acrosticle/core';
 import { getCell } from '@acrosticle/core';
 import { useCallback, type KeyboardEventHandler, type Ref } from 'react';
+import { describePeers, type PeerMap } from '../../components/PeerTag';
 import { PuzzleGrid, type SquareView } from '../../components/PuzzleGrid';
 import { gridSquareId } from './elementIds';
 
@@ -10,6 +11,7 @@ export interface GridProps {
   readonly selectedCell: CellNumber;
   readonly wordCells: readonly CellNumber[];
   readonly clueCells: readonly CellNumber[];
+  readonly peers: PeerMap;
   readonly active: boolean;
   readonly onSelect: (cell: CellNumber) => void;
   readonly onKeyDown: KeyboardEventHandler;
@@ -23,6 +25,7 @@ export function Grid({
   selectedCell,
   wordCells,
   clueCells,
+  peers,
   active,
   onSelect,
   onKeyDown,
@@ -39,12 +42,16 @@ export function Grid({
         return { ariaLabel: `Punctuation ${square.char}` };
       case 'letter': {
         const letter = getCell(solve, square.number);
+        const here = peers.get(square.number);
+        const who = here ? describePeers(here) : undefined;
         return {
           id: gridSquareId(square.number),
-          ariaLabel: `Square ${square.number}, clue ${square.clue}, ${letter ?? 'empty'}`,
+          ariaLabel: `Square ${square.number}, clue ${square.clue}, ${letter ?? 'empty'}${who ? `, ${who}` : ''}`,
+          title: who,
           letter,
           selected: square.number === selectedCell,
           tone: inWord.has(square.number) ? 'word' : inClue.has(square.number) ? 'clue' : undefined,
+          peers: here,
         };
       }
     }

@@ -21,6 +21,17 @@ export function setCell(state: SolveState, cell: CellNumber, value: Letter | nul
   return { ...state, [cell]: value };
 }
 
+/** A change to one cell: a letter, or null to clear it. */
+export interface CellEdit {
+  readonly cell: CellNumber;
+  readonly value: Letter | null;
+}
+
+/** Applies an edit (or nothing, for null). */
+export function applyEdit(state: SolveState, edit: CellEdit | null): SolveState {
+  return edit ? setCell(state, edit.cell, edit.value) : state;
+}
+
 export function getCell(state: SolveState, cell: CellNumber): Letter | null {
   return state[cell] ?? null;
 }

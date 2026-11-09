@@ -81,6 +81,18 @@ export default tseslint.config(
     },
   },
 
+  // Browser code must not reach for Node globals (the web tsconfig includes Node
+  // types only for vite.config.ts).
+  {
+    files: ['apps/web/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        { name: 'process', message: 'process does not exist in the browser.' },
+      ],
+    },
+  },
+
   // Tests may be a little looser.
   {
     files: ['**/*.test.{ts,tsx}', '**/tests/**/*.{ts,tsx}'],

@@ -7,4 +7,4 @@ the decision. Write a new one that supersedes it.
 | ADR                                 | Title                      | Status   |
 | ----------------------------------- | -------------------------- | -------- |
 | [0001](0001-tech-stack.md)          | Tech stack and repo layout | Accepted |
-| [0002](0002-collaboration-model.md) | Collaboration model        | Proposed |
+| [0002](0002-collaboration-model.md) | Collaboration model        | Accepted |
