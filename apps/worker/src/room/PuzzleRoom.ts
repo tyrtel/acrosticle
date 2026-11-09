@@ -59,7 +59,7 @@ export class PuzzleRoom extends DurableObject<Env> {
    * Stores the puzzle for a new room. Called once, by the router, right after
    * the puzzle passed validation. Returns false if the room already exists.
    */
-  initialize(puzzle: PuzzleFile, createdBy: string): boolean {
+  initialize(puzzle: PuzzleFile, createdBy: string | null): boolean {
     if (this.readMeta('puzzle') !== null) return false;
     const converted = puzzleFromCompact(puzzle);
     if (!converted.ok) throw new Error(`initialize() got an invalid puzzle: ${converted.error}`);
@@ -69,7 +69,7 @@ export class PuzzleRoom extends DurableObject<Env> {
       this.writeMeta('puzzle', JSON.stringify(puzzle));
       this.writeMeta('cellCount', String(cellCount));
       this.writeMeta('version', '0');
-      this.writeMeta('createdBy', createdBy);
+      if (createdBy !== null) this.writeMeta('createdBy', createdBy);
       this.writeMeta('createdAt', String(Date.now()));
     });
     this.loaded = { puzzle, cellCount };

@@ -1,3 +1,4 @@
+export * from './account';
 export * from './messages';
 export * from './parseResult';
 export * from './puzzleFile';

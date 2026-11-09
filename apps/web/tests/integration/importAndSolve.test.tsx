@@ -5,15 +5,20 @@ import { App } from '../../src/App';
 import { FakeBackend } from '../support/fakeBackend';
 import { samplePuzzleFileAsPrinted } from '../support/samples';
 
-beforeEach(() => new FakeBackend().install());
+let backend: FakeBackend;
+beforeEach(() => {
+  backend = new FakeBackend();
+  backend.install();
+});
 
 describe('importing, fixing and solving a puzzle', () => {
   it('goes from a pasted file with a misprint to a shared room', async () => {
+    backend.signIn();
     window.localStorage.setItem('acrosticle:name', 'Ada');
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: 'Import a puzzle file' }));
+    await user.click(await screen.findByRole('button', { name: 'Import a puzzle file' }));
     await user.click(screen.getByLabelText('Or paste the file contents'));
     await user.paste(JSON.stringify(samplePuzzleFileAsPrinted()));
     await user.click(screen.getByRole('button', { name: 'Load puzzle' }));
@@ -34,20 +39,26 @@ describe('importing, fixing and solving a puzzle', () => {
   });
 
   it('shows why a room could not be created', async () => {
+    backend.failNextCreate = { status: 503, error: 'The server is busy. Try again soon.' };
     const user = userEvent.setup();
     render(<App />);
-    const fetchMock = globalThis.fetch as unknown as {
-      mockImplementationOnce: (fn: () => Promise<Response>) => void;
-    };
-    fetchMock.mockImplementationOnce(() =>
-      Promise.resolve(
-        new Response(JSON.stringify({ error: 'Sign in to create a puzzle room.' }), {
-          status: 401,
-        }),
-      ),
-    );
     await user.click(screen.getByRole('button', { name: 'Try the sample puzzle' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Sign in to create a puzzle room.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The server is busy. Try again soon.',
+    );
     expect(window.location.pathname).toBe('/');
+  });
+
+  it('lists the new room under My puzzles', async () => {
+    backend.signIn();
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Try the sample puzzle' }));
+    await screen.findByLabelText(/Your name/);
+
+    await user.click(screen.getByRole('link', { name: 'My puzzles' }));
+    expect(window.location.pathname).toBe('/my');
+    const link = await screen.findByRole('link', { name: 'Diplo-Crostic No. 37' });
+    expect(link).toHaveAttribute('href', '/r/Created000000000000001');
   });
 });

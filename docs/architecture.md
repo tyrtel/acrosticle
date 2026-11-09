@@ -28,18 +28,35 @@
 
 ## HTTP API
 
-| Method and path         | Purpose                                                                                                            |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `GET /api/health`       | Liveness check                                                                                                     |
-| `POST /api/rooms`       | Create a room for a puzzle file. Requires a signed-in user (see below); validates the puzzle; returns `{ roomId }` |
-| `GET /api/rooms/:id`    | Check a room exists before joining; returns `{ roomId, title }` or 404                                             |
-| `GET /api/rooms/:id/ws` | WebSocket upgrade into the room                                                                                    |
+| Method and path                 | Purpose                                                                                                                            |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/health`               | Liveness check                                                                                                                     |
+| `POST /api/rooms`               | Create a room: `{ sample: "diplo-crostic-37" }` (anyone) or `{ puzzle }` (signed-in, allowlisted; validated). Returns `{ roomId }` |
+| `GET /api/rooms/:id`            | Check a room exists before joining; `{ roomId, title }` or 404                                                                     |
+| `GET /api/rooms/:id/ws`         | WebSocket upgrade into the room                                                                                                    |
+| `GET /api/auth/google`          | Start Google sign-in (`?returnTo=/path`)                                                                                           |
+| `GET /api/auth/google/callback` | Google returns here; sets the session cookie                                                                                       |
+| `POST /api/auth/logout`         | End the session                                                                                                                    |
+| `GET /api/me`                   | `{ user, canCreate, signInConfigured }`; extends an ageing session                                                                 |
+| `GET /api/me/rooms`             | Rooms the signed-in user created, newest first                                                                                     |
 
 Room ids are 128 random bits (22 base64url characters). The link is the access control for solving.
 
-**Sign-in (temporary):** until Google sign-in lands in M4, `getCurrentUser` in `apps/worker/src/auth.ts`
-denies room creation unless `DEV_ALLOW_ANONYMOUS` is `"true"`. `npm run dev` and the tests set it; the
-committed `wrangler.jsonc` default is `"false"`, so a deployment denies by default.
+## Sign-in and accounts (ADR 0003)
+
+- **Flow:** OAuth 2.0 authorization code + PKCE + `state`, written directly in `apps/worker/src/google.ts`
+  and `authRoutes.ts`. The state, PKCE verifier and return path ride in a short-lived `HttpOnly` cookie
+  scoped to `/api/auth`.
+- **Sessions:** a random 32-byte token in an `HttpOnly; Secure; SameSite=Lax` cookie; D1 stores only its
+  SHA-256 hash. 30 days, extended by `/api/me` once under 15 days remain.
+- **D1 (`DB` binding, `apps/worker/migrations/`):** `users`, `sessions`, and `rooms` (every room, with
+  its creator if signed in).
+- **Who can do what:** anyone can start a sample room or join any room by link; only signed-in users whose
+  email is in the `CREATOR_ALLOWLIST` secret can create rooms for their own puzzles.
+- **Configuration:** `APP_ORIGIN` and `GOOGLE_CLIENT_ID` are vars in `wrangler.jsonc`;
+  `GOOGLE_CLIENT_SECRET` and `CREATOR_ALLOWLIST` are secrets (`.dev.vars` locally). Without Google
+  credentials, sign-in is reported as not set up and everything else still works.
+- POSTs whose `Origin` isn't `APP_ORIGIN` are rejected.
 
 ## Real-time flow
 

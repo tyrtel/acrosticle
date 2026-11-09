@@ -1,0 +1,6 @@
+# Copy to .dev.vars (git-ignored) for local development.
+# Google OAuth client (see docs/setup/google-sign-in.md). Leave empty to run without sign-in.
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# Your email, so you can create rooms for imported puzzles locally.
+CREATOR_ALLOWLIST=you@example.com

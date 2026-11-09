@@ -1,6 +1,13 @@
 import type { Letter } from '@acrosticle/core';
-import type { ClientMessage, Member, PuzzleFile } from '@acrosticle/protocol';
+import type {
+  ClientMessage,
+  Member,
+  MeResponse,
+  MyRoomsResponse,
+  PuzzleFile,
+} from '@acrosticle/protocol';
 import { vi } from 'vitest';
+import sample from '../../../../samples/puzzles/diplo-crostic-37.json';
 import { FakeSocket } from './fakeSocket';
 
 const COLORS = ['#e4572e', '#1b998b', '#7b2cbf'];
@@ -11,7 +18,21 @@ const COLORS = ['#e4572e', '#1b998b', '#7b2cbf'];
  */
 export class FakeBackend {
   readonly rooms = new Map<string, FakeRoom>();
+  /** Rooms the signed-in user created, oldest first. */
+  readonly myRooms: MyRoomsResponse['rooms'][number][] = [];
+  me: MeResponse = { user: null, canCreate: false, signInConfigured: true };
+  /** Make the next room creation fail with this response. */
+  failNextCreate: { status: number; error: string } | null = null;
   private created = 0;
+
+  signIn({
+    canCreate = true,
+    name = 'Ada Lovelace',
+    email = 'ada@example.com',
+    picture = null as string | null,
+  } = {}): void {
+    this.me = { user: { id: 'u1', name, email, picture }, canCreate, signInConfigured: true };
+  }
 
   /** Pre-creates a room, as if someone shared its link. */
   addRoom(
@@ -46,10 +67,41 @@ export class FakeBackend {
     const json = (status: number, body: unknown) =>
       Promise.resolve(new Response(JSON.stringify(body), { status }));
 
+    if (url === '/api/me') return json(200, this.me);
+    if (url === '/api/me/rooms') {
+      if (!this.me.user) return json(401, { error: 'Sign in to see your puzzles.' });
+      return json(200, { rooms: [...this.myRooms].reverse() });
+    }
+    if (url === '/api/auth/logout' && init?.method === 'POST') {
+      this.me = { user: null, canCreate: false, signInConfigured: this.me.signInConfigured };
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
     if (url === '/api/rooms' && init?.method === 'POST') {
-      const { puzzle } = JSON.parse(init.body as string) as { puzzle: PuzzleFile };
+      if (this.failNextCreate) {
+        const { status, error } = this.failNextCreate;
+        this.failNextCreate = null;
+        return json(status, { error });
+      }
+      const body = JSON.parse(init.body as string) as { puzzle?: PuzzleFile; sample?: string };
+      // Same rules as the real Worker: samples are free, own puzzles need an allowlisted account.
+      let puzzle: PuzzleFile;
+      if (body.sample) {
+        puzzle = sample;
+      } else {
+        if (!this.me.user)
+          return json(401, { error: 'Sign in to create a room for your own puzzle.' });
+        if (!this.me.canCreate) return json(403, { error: 'Not on the allowlist.' });
+        puzzle = body.puzzle as PuzzleFile;
+      }
       const roomId = `Created${String(++this.created).padStart(15, '0')}`;
       this.addRoom(puzzle, roomId);
+      if (this.me.user) {
+        this.myRooms.push({
+          roomId,
+          title: puzzle.title ?? null,
+          createdAt: Date.UTC(2026, 10, this.created),
+        });
+      }
       return json(201, { roomId });
     }
     const roomId = /^\/api\/rooms\/([^/]+)$/.exec(url)?.[1];

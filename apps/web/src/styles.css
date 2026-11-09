@@ -60,7 +60,10 @@ body {
   color: var(--text);
 }
 
-button {
+button,
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -77,4 +80,21 @@ button {
 
 .error {
   color: var(--error);
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.app-header h1 {
+  margin: 0.5rem 0;
+}
+
+.note {
+  color: var(--text-muted);
 }

@@ -1,5 +1,6 @@
 import { MAX_NAME_LENGTH, type RoomInfoResponse } from '@acrosticle/protocol';
 import { useEffect, useId, useState, type FormEvent } from 'react';
+import { useSession } from '../account';
 import { Solver } from '../solver';
 import styles from './Room.module.css';
 import { getRoomInfo } from './roomApi';
@@ -66,7 +67,9 @@ export function RoomPage({ roomId, createSocket }: RoomPageProps) {
 }
 
 function JoinForm({ title, onJoin }: { title: string | null; onJoin: (name: string) => void }) {
-  const [value, setValue] = useState(() => loadName());
+  const { me } = useSession();
+  // Suggest the account name; it can still be changed for this room.
+  const [value, setValue] = useState(() => loadName() || me.user?.name || '');
   const id = useId();
   const trimmed = value.trim();
 

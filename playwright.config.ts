@@ -23,7 +23,11 @@ export default defineConfig({
   // Start both servers and wait for each, so tests never hit a half-started backend.
   webServer: [
     {
-      command: `npm run dev -w @acrosticle/worker -- --port ${WORKER_PORT} --inspector-port 0 --persist-to .wrangler/e2e-state`,
+      // Own database and settings (e2e.env, not your .dev.vars): sign-in is deliberately off.
+      command: [
+        'npm run db:migrate:local -w @acrosticle/worker -- --persist-to .wrangler/e2e-state',
+        `npm run serve -w @acrosticle/worker -- --port ${WORKER_PORT} --inspector-port 0 --persist-to .wrangler/e2e-state --env-file e2e.env`,
+      ].join(' && '),
       url: `http://localhost:${WORKER_PORT}/api/health`,
       reuseExistingServer: false,
       timeout: 60_000,

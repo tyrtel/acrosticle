@@ -4,6 +4,7 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FakeBackend, type FakeRoom } from '../../../tests/support/fakeBackend';
+import { SessionProvider } from '../account';
 import { RoomPage } from './RoomPage';
 
 const ROOM_ID = 'TinyRoom00000000000000';
@@ -56,6 +57,16 @@ describe('RoomPage', () => {
   it('puts the cursor in the name box, ready to type', async () => {
     render(<RoomPage roomId={ROOM_ID} />);
     expect(await screen.findByLabelText(/Your name/)).toHaveFocus();
+  });
+
+  it('suggests the account name when signed in', async () => {
+    backend.signIn({ name: 'Ada Lovelace' });
+    render(
+      <SessionProvider>
+        <RoomPage roomId={ROOM_ID} />
+      </SessionProvider>,
+    );
+    expect(await screen.findByDisplayValue('Ada Lovelace')).toHaveFocus();
   });
 
   it('joins straight away with a remembered name', async () => {

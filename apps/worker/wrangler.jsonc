@@ -6,9 +6,28 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
 
-  // Development-only escape hatch until sign-in exists (M4). Never "true" when deployed;
-  // `npm run dev` turns it on with --var.
-  "vars": { "DEV_ALLOW_ANONYMOUS": "false" },
+  // Public settings. APP_ORIGIN is the address users see: Google redirects back to it after
+  // sign-in. `npm run dev` overrides it with http://localhost:5173.
+  "vars": {
+    "APP_ORIGIN": "https://acrosticle.tyrtel.workers.dev",
+    // OAuth client id from Google Cloud (public, not a secret). Empty = sign-in disabled.
+    "GOOGLE_CLIENT_ID": "",
+  },
+  // Secrets: never in this file. Set with `wrangler secret put NAME` (locally: apps/worker/.dev.vars).
+  // CREATOR_ALLOWLIST is comma-separated emails allowed to create rooms for their own puzzles;
+  // it's a secret so the emails stay out of the public repo.
+  "secrets": { "required": ["GOOGLE_CLIENT_SECRET", "CREATOR_ALLOWLIST"] },
+
+  // Accounts, sessions and the room list. Replace database_id with the id printed by
+  // `wrangler d1 create acrosticle` before the first deploy (see docs/setup/google-sign-in.md).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "acrosticle",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
+    },
+  ],
 
   // One PuzzleRoom Durable Object instance per shared solving session.
   "durable_objects": {

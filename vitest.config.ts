@@ -7,7 +7,12 @@ import { defineConfig } from 'vitest/config';
  */
 export default defineConfig({
   test: {
-    projects: ['packages/*', 'apps/web', 'apps/worker'],
+    projects: [
+      'packages/*',
+      'apps/web',
+      'apps/worker',
+      { test: { name: 'scripts', environment: 'node', include: ['scripts/**/*.test.ts'] } },
+    ],
     coverage: {
       // istanbul (not v8) because the Workers pool does not support v8 coverage.
       provider: 'istanbul',

@@ -9,6 +9,7 @@ describe('parseRoute', () => {
     ['/', { kind: 'home' }],
     [`/r/${ROOM}`, { kind: 'room', roomId: ROOM }],
     [`/r/${ROOM}/`, { kind: 'room', roomId: ROOM }],
+    ['/my', { kind: 'my' }],
     ['/r/short', { kind: 'not-found' }],
     ['/elsewhere', { kind: 'not-found' }],
   ])('%s', (path, route) => {

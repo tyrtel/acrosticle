@@ -8,10 +8,12 @@ import { useSyncExternalStore } from 'react';
 export type Route =
   | { readonly kind: 'home' }
   | { readonly kind: 'room'; readonly roomId: string }
+  | { readonly kind: 'my' }
   | { readonly kind: 'not-found' };
 
 export function parseRoute(pathname: string): Route {
   if (pathname === '/' || pathname === '') return { kind: 'home' };
+  if (pathname === '/my' || pathname === '/my/') return { kind: 'my' };
   const room = /^\/r\/([^/]+)\/?$/.exec(pathname);
   const roomId = room?.[1];
   if (roomId !== undefined && ROOM_ID_PATTERN.test(roomId)) return { kind: 'room', roomId };

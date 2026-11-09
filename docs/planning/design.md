@@ -383,15 +383,47 @@ Builds on the existing `PuzzleRoom` Durable Object and [ADR 0002](../adr/0002-co
 
 ### 7.4 Accounts and access
 
-| Action                                 | Who can do it                                        |
-| -------------------------------------- | ---------------------------------------------------- |
-| Upload an image / create a puzzle room | Signed-in users only                                 |
-| Open a room link, join, and edit       | Anyone with the link, no sign-in (display name only) |
+| Action                                         | Who can do it                                        |
+| ---------------------------------------------- | ---------------------------------------------------- |
+| Create a room for an imported or parsed puzzle | Signed-in users whose email is on the **allowlist**  |
+| Create a room for the built-in **sample**      | Anyone, no sign-in (no parsing cost, tiny storage)   |
+| Open a room link, join, and edit               | Anyone with the link, no sign-in (display name only) |
+| See "My puzzles"                               | Signed-in users: the rooms they created              |
 
-- **Sign-in method:** Google sign-in, to be designed in a later discussion. Until then the design assumes
-  a `requireUser` check in the Worker that resolves the current user from a session, so that endpoints
-  can be built and tested against a stub.
-- **Signed-in users in rooms** can use their account name as the default display name.
+**Sign-in flow (decided 2026-11-09).** Google sign-in implemented in our own Worker, with no third-party
+auth service:
+
+1. **Sign in with Google** goes to `GET /api/auth/google`, which redirects to Google (OAuth 2.0
+   authorization code flow with PKCE and a `state` check).
+2. Google redirects back to `GET /api/auth/google/callback`. The Worker exchanges the code, verifies the
+   ID token, and upserts the user.
+3. The Worker creates a session and sets it as a cookie: `HttpOnly`, `Secure`, `SameSite=Lax`, holding
+   only an opaque random token (the database stores a hash of it).
+4. `getCurrentUser` (today's stand-in in `apps/worker/src/auth.ts`) resolves the user from that cookie.
+   `GET /api/me` tells the web app who is signed in; `POST /api/auth/logout` ends the session.
+
+**Storage: Cloudflare D1** (SQLite, included in the free plan), because accounts, sessions and "rooms I
+created" are cross-room queries that per-room Durable Object storage can't answer.
+
+| Table      | Columns                                                                           |
+| ---------- | --------------------------------------------------------------------------------- |
+| `users`    | id, google_sub (unique), email, name, picture_url, created_at, last_login_at      |
+| `sessions` | token_hash, user_id, created_at, expires_at                                       |
+| `rooms`    | room_id, created_by (user id, null for anonymous sample rooms), title, created_at |
+
+**Details:**
+
+- **User data:** Google account id, email, display name, and profile photo URL. Nothing else.
+- **Allowlist:** a list of allowed emails, kept as a Cloudflare secret (`CREATOR_ALLOWLIST`) so the
+  emails stay out of the public repo and can change without a code change. Anyone can sign in; only listed emails can create non-sample rooms.
+  Signed-in users who aren't listed see a clear message.
+- **Sessions:** 30 days, extended when used; sign-out deletes the session.
+- **Secrets:** the Google client secret is a Cloudflare secret (`wrangler secret put`), and in
+  `.dev.vars` (git-ignored) for local development. Never committed.
+- **Rooms:** signed-in users' account name (and photo) are the default display name in rooms; they can
+  still change the name.
+- **Google setup (owner task):** a Google Cloud project with an OAuth client, consent screen details, and
+  exact redirect URIs for local development and production.
 
 ## 8. User interface
 
@@ -456,7 +488,7 @@ every commit.
 | M1 ✅ | Domain core          | Puzzle model, index, two-way entry and cursor logic, `validatePuzzle`, golden fixture. All in core, fully tested. |
 | M2 ✅ | Single-player solver | Grid and clue UI, keyboard play, JSON import / manual entry editor with validation.                               |
 | M3 ✅ | Real-time rooms      | Room creation, persistence, snapshot and updates, presence, reconnects, shareable links.                          |
-| M4    | Accounts             | Google sign-in (design discussion first), sessions, sign-in required to create rooms.                             |
+| M4 ✅ | Accounts             | Google sign-in (design discussion first), sessions, sign-in required to create rooms.                             |
 | M5    | Image parsing        | Parse endpoint, Claude integration, review screen, parser eval, then a cost review together.                      |
 | M6    | Polish               | Mobile input, accessibility pass, rate limits and spend cap, deploy.                                              |
 | —     | Stretch              | Phone-photo capture (§6.8).                                                                                       |
@@ -472,16 +504,17 @@ of the Claude call against the sample image could run alongside M1.
 | Topic           | Decision                                                                                                                                                                             |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Answer checking | None.                                                                                                                                                                                |
-| Identity        | Sign-in required to create a puzzle (Google sign-in, details to be discussed). Joining and editing need only the link.                                                               |
+| Identity        | Google sign-in in our own Worker (§7.4). Creating rooms needs sign-in plus the email allowlist; sample rooms and joining by link need no sign-in. Store id, email, name, photo.      |
 | Permissions     | Anyone with the room link can edit any square. No read-only viewers in v1.                                                                                                           |
 | Retention       | Rooms last indefinitely. Revisit only if storage cost becomes significant.                                                                                                           |
 | Phone photos    | Stretch goal. Keep it possible, build it later.                                                                                                                                      |
 | Hosting         | Cloudflare Workers with static assets: one Worker serves the web app, API and rooms. Start on the free plan; expect to need Workers Paid ($5/month) once image parsing ships (§6.5). |
+| My puzzles      | Signed-in users get a list of the rooms they created (M4).                                                                                                                           |
 | Parse cost      | Reduce where possible. Review the eval results and cost options together once parsing works.                                                                                         |
 
 ### Still open
 
-1. **Google sign-in design:** provider setup, session handling, and what user data we store.
+1. **Production address:** the free `workers.dev` address or a custom domain (Google needs exact URLs).
 2. **Spend cap:** the actual per-user limits and global daily budget for parsing.
 3. **Undo:** personal undo of your own edits, or none?
 4. **Mobile keyboard:** hidden input or a custom on-screen letter keyboard?

@@ -13,6 +13,8 @@
   ],
   "scripts": {
     "dev": "concurrently -k -n web,worker -c cyan,magenta \"npm run dev -w @acrosticle/web\" \"npm run dev -w @acrosticle/worker\"",
+    "setup:signin": "node scripts/setup-signin.ts",
+    "doctor:signin": "node scripts/doctor-signin.ts",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "tsc --noEmit -p tsconfig.json && npm run typecheck --workspaces --if-present",
     "lint": "eslint .",

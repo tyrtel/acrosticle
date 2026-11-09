@@ -93,6 +93,12 @@ export default tseslint.config(
     },
   },
 
+  // Command-line scripts talk to the user through the console.
+  {
+    files: ['scripts/**/*.ts'],
+    rules: { 'no-console': 'off' },
+  },
+
   // Tests may be a little looser.
   {
     files: ['**/*.test.{ts,tsx}', '**/tests/**/*.{ts,tsx}'],

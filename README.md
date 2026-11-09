@@ -37,24 +37,37 @@ npm run dev
 To try solving together, click **Try the sample puzzle**, then open the room's link in a second browser
 window (or a private window, which gets its own name).
 
-Creating rooms will require signing in (coming soon). Until then, `npm run dev` allows anonymous room
-creation through the development-only `DEV_ALLOW_ANONYMOUS` variable.
+The sample needs no account. Importing your own puzzles needs Google sign-in with an allowlisted email.
+To enable sign-in locally, copy `apps/worker/.dev.vars.example` to `apps/worker/.dev.vars` (git-ignored)
+and fill in the Google OAuth client and your email; see
+[`docs/setup/google-sign-in.md`](docs/setup/google-sign-in.md). Without it, everything except sign-in
+works, and Wrangler warns about the missing secrets.
+
+`npm run dev` applies the local database migrations (Cloudflare D1) before starting the Worker.
+
+### Google sign-in (optional locally)
+
+Without sign-in configured, everything works except creating rooms for imported puzzles. To enable it,
+follow [`docs/setup/google-sign-in.md`](docs/setup/google-sign-in.md): in short, `npm run setup:signin`,
+restart `npm run dev`, then `npm run doctor:signin` to check.
 
 ## Scripts
 
-| Command                    | Description                                        |
-| -------------------------- | -------------------------------------------------- |
-| `npm run dev`              | Run web + worker locally                           |
-| `npm run build`            | Production build of the web app                    |
-| `npm test`                 | All unit and integration tests                     |
-| `npm run test:unit`        | Unit tests only                                    |
-| `npm run test:integration` | Integration tests only                             |
-| `npm run test:coverage`    | Tests with a coverage report (`coverage/`)         |
-| `npm run test:e2e`         | Playwright end-to-end tests                        |
-| `npm run typecheck`        | Type-check every workspace                         |
-| `npm run lint`             | Lint                                               |
-| `npm run format`           | Format with Prettier                               |
-| `npm run check`            | Everything CI runs (typecheck, lint, format, test) |
+| Command                    | Description                                                  |
+| -------------------------- | ------------------------------------------------------------ |
+| `npm run dev`              | Run web + worker locally                                     |
+| `npm run build`            | Production build of the web app                              |
+| `npm test`                 | All unit and integration tests                               |
+| `npm run test:unit`        | Unit tests only                                              |
+| `npm run test:integration` | Integration tests only                                       |
+| `npm run test:coverage`    | Tests with a coverage report (`coverage/`)                   |
+| `npm run test:e2e`         | Playwright end-to-end tests                                  |
+| `npm run typecheck`        | Type-check every workspace                                   |
+| `npm run lint`             | Lint                                                         |
+| `npm run format`           | Format with Prettier                                         |
+| `npm run setup:signin`     | Write local Google sign-in secrets (`apps/worker/.dev.vars`) |
+| `npm run doctor:signin`    | Check the local sign-in setup                                |
+| `npm run check`            | Everything CI runs (typecheck, lint, format, test)           |
 
 The first time you run end-to-end tests, install a browser: `npx playwright install chromium`. The
 e2e tests start their own servers on ports 5174 and 8788, so they work even while `npm run dev` is running.

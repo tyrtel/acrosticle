@@ -12,6 +12,11 @@ describe('RoomId', () => {
 });
 
 describe('CreateRoomRequest', () => {
+  it('accepts a known sample id, and nothing else without a puzzle', () => {
+    expect(CreateRoomRequest.safeParse({ sample: 'diplo-crostic-37' }).success).toBe(true);
+    expect(CreateRoomRequest.safeParse({ sample: 'nope' }).success).toBe(false);
+  });
+
   it('requires a puzzle file', () => {
     expect(CreateRoomRequest.safeParse({}).success).toBe(false);
     expect(

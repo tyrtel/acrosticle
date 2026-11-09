@@ -5,8 +5,20 @@ import { PuzzleFile } from './puzzleFile';
 export const ROOM_ID_PATTERN = /^[A-Za-z0-9_-]{22}$/;
 export const RoomId = z.string().regex(ROOM_ID_PATTERN, 'not a valid room id');
 
-/** Body of `POST /api/rooms`. */
-export const CreateRoomRequest = z.object({ puzzle: PuzzleFile });
+/** Built-in sample puzzles, which anyone may start a room for without signing in. */
+export const SAMPLE_IDS = ['diplo-crostic-37'] as const;
+export const SampleId = z.enum(SAMPLE_IDS);
+export type SampleId = z.infer<typeof SampleId>;
+
+/**
+ * Body of `POST /api/rooms`: either a puzzle file (signed-in, allowlisted users) or the id of a
+ * built-in sample (anyone; the server uses its own copy).
+ */
+export const CreateRoomRequest = z.union([
+  // Checked first, so a request naming a sample always uses the server's copy.
+  z.object({ sample: SampleId }),
+  z.object({ puzzle: PuzzleFile }),
+]);
 export type CreateRoomRequest = z.infer<typeof CreateRoomRequest>;
 
 /** Response to `POST /api/rooms` (201). */

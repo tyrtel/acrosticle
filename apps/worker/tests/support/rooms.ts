@@ -1,6 +1,7 @@
 import { parseServerMessage, type PuzzleFile, type ServerMessage } from '@acrosticle/protocol';
 import { exports } from 'cloudflare:workers';
 import { expect } from 'vitest';
+import { signInAs } from './accounts';
 
 export const BASE = 'https://acrosticle.test';
 
@@ -18,16 +19,20 @@ export const tinyPuzzleFile: PuzzleFile = {
   ],
 };
 
-export function postRoom(body: unknown): Promise<Response> {
+export function postRoom(body: unknown, cookie?: string): Promise<Response> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (cookie) headers.Cookie = cookie;
   return exports.default.fetch(`${BASE}/api/rooms`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: typeof body === 'string' ? body : JSON.stringify(body),
   });
 }
 
+/** Creates a room as an allowlisted user. */
 export async function createRoom(puzzle: PuzzleFile = tinyPuzzleFile): Promise<string> {
-  const res = await postRoom({ puzzle });
+  const { cookie } = await signInAs();
+  const res = await postRoom({ puzzle }, cookie);
   expect(res.status).toBe(201);
   const { roomId } = await res.json<{ roomId: string }>();
   return roomId;

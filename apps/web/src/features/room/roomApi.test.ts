@@ -1,6 +1,6 @@
 import { parseCompactGrid, type Puzzle } from '@acrosticle/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createRoom, getRoomInfo } from './roomApi';
+import { createRoom, createSampleRoom, getRoomInfo } from './roomApi';
 
 const ROOM = 'AbCdEfGhIjKlMnOpQrSt_-';
 
@@ -91,6 +91,15 @@ describe('createRoom', () => {
       ok: false,
       error: 'The server sent an unexpected response.',
     });
+  });
+});
+
+describe('createSampleRoom', () => {
+  it('asks for the sample by id, sending no puzzle', async () => {
+    const fetchMock = mockFetch(201, { roomId: ROOM });
+    expect(await createSampleRoom('diplo-crostic-37')).toEqual({ ok: true, value: ROOM });
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toEqual({ sample: 'diplo-crostic-37' });
   });
 });
 

@@ -5,10 +5,14 @@ import {
   validateWith,
   type ApiError,
   type CreateRoomResponse,
+  type PuzzleFile,
   type RoomInfoResponse,
 } from '@acrosticle/protocol';
-import { getCurrentUser } from './auth';
+import { appOrigin, canCreate, getCurrentUser } from './auth';
+import { finishGoogleSignIn, logout, me, myRooms, startGoogleSignIn } from './authRoutes';
+import { recordRoom } from './db';
 import { newRoomId } from './roomId';
+import { SAMPLE_PUZZLES } from './samples';
 
 /** Puzzle files are a few KB; anything much larger is a mistake or abuse. */
 export const MAX_CREATE_BODY_BYTES = 100_000;
@@ -18,13 +22,30 @@ const ROOM_PATH = /^\/api\/rooms\/([^/]+)(\/ws)?$/;
 /** Top-level HTTP routing. Keep handlers thin; real logic lives in the room or in core. */
 export async function route(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
+  const { method } = request;
 
-  if (url.pathname === '/api/health' && request.method === 'GET') {
-    return Response.json({ status: 'ok' });
+  // Defense in depth on top of SameSite cookies: state-changing requests from
+  // a browser must come from our own pages.
+  const origin = request.headers.get('Origin');
+  if (method === 'POST' && origin !== null && origin !== appOrigin(request, env)) {
+    return apiError(403, 'Cross-site requests are not allowed.');
   }
 
-  if (url.pathname === '/api/rooms' && request.method === 'POST') {
-    return createRoom(request, env);
+  switch (`${method} ${url.pathname}`) {
+    case 'GET /api/health':
+      return Response.json({ status: 'ok' });
+    case 'POST /api/rooms':
+      return createRoom(request, env);
+    case 'GET /api/auth/google':
+      return startGoogleSignIn(request, env);
+    case 'GET /api/auth/google/callback':
+      return finishGoogleSignIn(request, env);
+    case 'POST /api/auth/logout':
+      return logout(request, env);
+    case 'GET /api/me':
+      return me(request, env);
+    case 'GET /api/me/rooms':
+      return myRooms(request, env);
   }
 
   const roomMatch = ROOM_PATH.exec(url.pathname);
@@ -32,16 +53,13 @@ export async function route(request: Request, env: Env): Promise<Response> {
   if (roomId !== undefined && ROOM_ID_PATTERN.test(roomId)) {
     const room = env.PUZZLE_ROOM.getByName(roomId);
     if (roomMatch?.[2]) return room.fetch(request);
-    if (request.method === 'GET') return roomInfo(roomId, await room.info());
+    if (method === 'GET') return roomInfo(roomId, await room.info());
   }
 
   return apiError(404, 'Not found');
 }
 
 async function createRoom(request: Request, env: Env): Promise<Response> {
-  const user = getCurrentUser(request, env);
-  if (!user) return apiError(401, 'Sign in to create a puzzle room.');
-
   const body = await request.text();
   if (new TextEncoder().encode(body).length > MAX_CREATE_BODY_BYTES) {
     return apiError(413, 'Puzzle file is too large.');
@@ -56,24 +74,50 @@ async function createRoom(request: Request, env: Env): Promise<Response> {
 
   const parsed = validateWith(CreateRoomRequest, json);
   if (!parsed.ok) return apiError(400, `Invalid request: ${parsed.error}`);
+  const user = await getCurrentUser(request, env);
 
-  const converted = puzzleFromCompact(parsed.value.puzzle);
-  if (!converted.ok) return apiError(400, `Invalid puzzle: ${converted.error}`);
-
-  const issues = validatePuzzle(converted.puzzle);
-  if (hasErrors(issues)) {
-    const errors = issues
-      .filter((issue) => issue.severity === 'error')
-      .map(({ code, message }) => ({ code, message }));
-    return apiError(422, 'The puzzle has errors. Fix them before creating a room.', errors);
+  let puzzle: PuzzleFile;
+  if ('sample' in parsed.value) {
+    // Anyone may start a room for a built-in sample; the puzzle is the server's own copy.
+    puzzle = SAMPLE_PUZZLES[parsed.value.sample];
+  } else {
+    if (!user) return apiError(401, 'Sign in to create a room for your own puzzle.');
+    if (!canCreate(user, env)) {
+      return apiError(
+        403,
+        `Your account (${user.email}) isn't enabled for creating puzzles yet. Ask the site owner to add it.`,
+      );
+    }
+    const issues = puzzleIssues(parsed.value.puzzle);
+    if (issues) return issues;
+    puzzle = parsed.value.puzzle;
   }
 
   const roomId = newRoomId();
-  const created = await env.PUZZLE_ROOM.getByName(roomId).initialize(parsed.value.puzzle, user.id);
+  const createdBy = user?.id ?? null;
+  const created = await env.PUZZLE_ROOM.getByName(roomId).initialize(puzzle, createdBy);
   if (!created) return apiError(500, 'Could not create the room. Please try again.');
+  await recordRoom(env.DB, {
+    roomId,
+    createdBy,
+    title: puzzle.title ?? null,
+    createdAt: Date.now(),
+  });
 
   const response: CreateRoomResponse = { roomId };
   return Response.json(response, { status: 201 });
+}
+
+/** A 400/422 response if the puzzle can't be used, or null if it's fine. */
+function puzzleIssues(file: PuzzleFile): Response | null {
+  const converted = puzzleFromCompact(file);
+  if (!converted.ok) return apiError(400, `Invalid puzzle: ${converted.error}`);
+  const issues = validatePuzzle(converted.puzzle);
+  if (!hasErrors(issues)) return null;
+  const errors = issues
+    .filter((issue) => issue.severity === 'error')
+    .map(({ code, message }) => ({ code, message }));
+  return apiError(422, 'The puzzle has errors. Fix them before creating a room.', errors);
 }
 
 function roomInfo(roomId: string, info: { title: string | null } | null): Response {

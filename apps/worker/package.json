@@ -5,7 +5,10 @@
   "description": "Cloudflare Worker + Durable Objects for real-time puzzle rooms.",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --var DEV_ALLOW_ANONYMOUS:true",
+    "dev": "npm run db:migrate:local && wrangler dev --var APP_ORIGIN:http://localhost:5173",
+    "serve": "wrangler dev",
+    "db:migrate:local": "wrangler d1 migrations apply acrosticle --local",
+    "db:migrate:remote": "wrangler d1 migrations apply acrosticle --remote",
     "deploy": "wrangler deploy",
     "cf-typegen": "wrangler types --strict-vars=false",
     "typecheck": "tsc --noEmit"
