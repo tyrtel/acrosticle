@@ -1,0 +1,117 @@
+.import,
+.review {
+  max-width: 90rem;
+}
+
+.paste {
+  display: block;
+  width: 100%;
+  margin: 0.25rem 0 0.5rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+
+.error {
+  color: var(--error);
+}
+
+.ok {
+  color: var(--text-muted);
+}
+
+.meta,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.blockedNote {
+  color: var(--text-muted);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: auto minmax(18rem, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.gridPane {
+  min-width: 0;
+  overflow-x: auto;
+  padding: 3px;
+}
+
+.sidePane {
+  max-height: calc(100vh - 10rem);
+  overflow-y: auto;
+}
+
+.summary {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
+.issues {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+}
+
+.issues li {
+  margin-bottom: 0.35rem;
+}
+
+.severity {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.error .severity {
+  color: var(--error);
+}
+
+.warning .severity {
+  color: var(--warning);
+}
+
+.info .severity {
+  color: var(--info);
+}
+
+.squareEditor,
+.clueEditor {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.5rem;
+  align-items: center;
+  margin: 0.75rem 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.squareEditor > label:first-of-type {
+  grid-column: 1 / -1;
+}
+
+.flagged {
+  border-color: var(--error);
+}
+
+.clueEditor .error {
+  grid-column: 2;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidePane {
+    max-height: none;
+  }
+}

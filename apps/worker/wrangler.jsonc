@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "acrosticle",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+
+  // One PuzzleRoom Durable Object instance per shared solving session.
+  "durable_objects": {
+    "bindings": [{ "name": "PUZZLE_ROOM", "class_name": "PuzzleRoom" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PuzzleRoom"] }],
+}

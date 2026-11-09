@@ -1,0 +1,142 @@
+{
+  "$comment": "Hand transcription of diplo-crostic-37.jpg, as printed, with misprints corrected (see errata). Grid rows: each token is <square number><clue label>, or # for a black square. Source image is public domain (Wikimedia Commons / Internet Archive sim_state-magazine_1986-07_291).",
+  "title": "Diplo-Crostic No. 37",
+  "constructedBy": "Carol Becker",
+  "source": "State magazine, July 1986 (Issue 291), page 37",
+  "image": "diplo-crostic-37.jpg",
+  "errata": [
+    {
+      "square": 193,
+      "printed": "193Y",
+      "corrected": "193V",
+      "reason": "Misprint in the original. Cell 193 appears only in clue V's blanks, and the clue lengths confirm it (V has 12 blanks, Y has 11)."
+    }
+  ],
+  "grid": {
+    "columns": 20,
+    "rows": [
+      "1O 2E 3P 4D 5A 6J 7I 8M # 9C 10R 11M 12V 13F 14D 15U # 16S 17B 18D",
+      "19T 20N 21J 22F 23W 24P # 25C 26A 27H # 28C 29L 30V 31D # 32H 33J 34M 35X",
+      "36S 37K # 38G 39O 40L 41F # 42V 43P 44A # 45U 46Y 47T 48Q 49W # 50A 51C",
+      "52L # 53J 54F 55P 56E 57R 58Y # 59B 60K 61G # 62D 63T 64V # 65S # 66E",
+      "67R 68B # 69Z 70P 71Q 72D 73J 74C # 75E 76X 77T # 78Z # 79I 80D 81B 82M",
+      "# 83J 84U # 85X 86W 87J # 88Y 89H # 90C 91E # 92B 93M 94K 95U 96V 97E",
+      "98F 99C # 100U 101I # 102O 103V 104Y 105E 106I # 107O # 108K 109Z 110E 111P 112M #",
+      "113S 114M 115S 116J # 117I 118D 119Q 120M 121P # 122P 123J 124E 125I 126U 127Q 128M 129T 130N",
+      "# 131Z 132F 133Y # 134M 135I 136P 137K 138A # 139G 140N 141V # 142R 143F 144C # 145U",
+      "146V 147N 148J 149Z 150H 151D 152A 153S 154X 155G 156O 157I 158W # 159W 160Z 161G 162N 163L #",
+      "164U 165D 166Y 167K 168C 169P # 170V 171A 172W 173X 174B # 175Q 176D 177P 178W # 179F 180V",
+      "181W 182T # 183Q 184S 185H 186O # 187W 188G 189M 190Y 191P 192I 193V # 194V 195H 196F 197Y",
+      "198I 199X 200H 201G # 202T # 203Y 204K 205Q 206T 207P 208M 209G 210N 211I # 212L 213D 214H",
+      "215K 216Z # 217Y 218B 219P 220Q 221Z 222W 223N 224A # 225W 226Y 227R 228O 229P 230N 231J 232A"
+    ]
+  },
+  "clues": [
+    {
+      "label": "A",
+      "text": "Daughter to Brabantio",
+      "cells": [138, 5, 44, 232, 224, 50, 171, 26, 152]
+    },
+    {
+      "label": "B",
+      "text": "\"'Tis an ____ thing to play with souls\" (Browning)",
+      "cells": [218, 68, 81, 59, 92, 17, 174]
+    },
+    {
+      "label": "C",
+      "text": "A gentleman of Verona",
+      "cells": [9, 25, 74, 51, 99, 28, 90, 168, 144]
+    },
+    {
+      "label": "D",
+      "text": "Language family that includes German, Slavic, and Iranian",
+      "cells": [18, 4, 31, 165, 14, 118, 151, 72, 213, 176, 80, 62]
+    },
+    { "label": "E", "text": "Brother to Malcolm", "cells": [56, 110, 91, 2, 66, 75, 124, 97, 105] },
+    {
+      "label": "F",
+      "text": "A people of South Africa",
+      "cells": [143, 98, 13, 41, 54, 132, 22, 196, 179]
+    },
+    {
+      "label": "G",
+      "text": "With WORD M, story of Helena and Bertram",
+      "cells": [155, 188, 201, 61, 38, 209, 139, 161]
+    },
+    {
+      "label": "H",
+      "text": "Horticultural foundation in Delaware",
+      "cells": [200, 185, 89, 150, 32, 214, 195, 27]
+    },
+    {
+      "label": "I",
+      "text": "Surname of Henry IV",
+      "cells": [117, 135, 79, 7, 192, 106, 198, 125, 101, 211, 157]
+    },
+    {
+      "label": "J",
+      "text": "Year Ohio joined the Union",
+      "cells": [21, 33, 6, 123, 83, 148, 231, 53, 116, 87, 73]
+    },
+    { "label": "K", "text": "Friend to Celia", "cells": [215, 204, 108, 60, 137, 167, 37, 94] },
+    {
+      "label": "L",
+      "text": "\"I like that ancient ____ phrase which calls the burial ground God's Acre\" (Longfellow)",
+      "cells": [212, 40, 163, 29, 52]
+    },
+    {
+      "label": "M",
+      "text": "See WORD G",
+      "cells": [128, 114, 189, 112, 82, 208, 93, 11, 134, 8, 34, 120]
+    },
+    {
+      "label": "N",
+      "text": "Officially vouch for",
+      "cells": [162, 210, 20, 130, 140, 147, 223, 230]
+    },
+    { "label": "O", "text": "General to Duncan", "cells": [186, 107, 1, 102, 228, 156, 39] },
+    {
+      "label": "P",
+      "text": "Metaphor for colorful noisy confusion",
+      "cells": [121, 207, 219, 177, 55, 3, 191, 24, 169, 122, 43, 111, 70, 136, 229]
+    },
+    {
+      "label": "Q",
+      "text": "Narrator of 1884 novel",
+      "cells": [71, 205, 127, 175, 183, 119, 220, 48]
+    },
+    {
+      "label": "R",
+      "text": "What to do with arugola or radicchio",
+      "cells": [57, 67, 142, 10, 227]
+    },
+    {
+      "label": "S",
+      "text": "A fitting that allows connection between dissimilar equipment",
+      "cells": [115, 153, 65, 16, 113, 36, 184]
+    },
+    { "label": "T", "text": "Verona family", "cells": [182, 63, 19, 77, 202, 206, 47, 129] },
+    {
+      "label": "U",
+      "text": "Susceptible to acoustic stimulation",
+      "cells": [126, 145, 15, 95, 100, 84, 164, 45]
+    },
+    {
+      "label": "V",
+      "text": "Story of Viola and Sebastian",
+      "cells": [96, 170, 103, 30, 194, 64, 180, 146, 12, 193, 42, 141]
+    },
+    {
+      "label": "W",
+      "text": "First course in Chinatown",
+      "cells": [181, 222, 49, 225, 159, 86, 187, 158, 23, 172, 178]
+    },
+    { "label": "X", "text": "Attendant to Hero", "cells": [76, 85, 35, 154, 173, 199] },
+    {
+      "label": "Y",
+      "text": "Suburb of San Francisco",
+      "cells": [203, 226, 133, 166, 46, 88, 58, 217, 104, 197, 190]
+    },
+    { "label": "Z", "text": "Autonomous", "cells": [69, 160, 109, 78, 149, 131, 216, 221] }
+  ]
+}
