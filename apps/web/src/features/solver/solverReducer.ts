@@ -1,5 +1,5 @@
 import {
-  enterLetter,
+  enterEntry,
   erase,
   jumpToClue,
   moveInGrid,
@@ -7,7 +7,7 @@ import {
   type CellEdit,
   type CellNumber,
   type Direction,
-  type Letter,
+  type Entry,
   type PuzzleIndex,
   type Selection,
   type SolveState,
@@ -16,7 +16,7 @@ import {
 
 export type SolverAction =
   | { readonly type: 'select'; readonly cell: CellNumber; readonly view: View }
-  | { readonly type: 'input'; readonly letter: Letter }
+  | { readonly type: 'input'; readonly entry: Entry }
   | { readonly type: 'erase' }
   | { readonly type: 'clear' }
   | { readonly type: 'move'; readonly direction: Direction }
@@ -48,7 +48,7 @@ export function reduceSolver(
     case 'select':
       return move({ cell: action.cell, view: action.view });
     case 'input':
-      return enterLetter(index, selection, action.letter);
+      return enterEntry(index, selection, action.entry);
     case 'erase':
       return erase(index, solve, selection);
     case 'clear':

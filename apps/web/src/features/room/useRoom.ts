@@ -45,6 +45,11 @@ export function useRoom(
       onStatus: (status) => dispatch({ type: 'connection', status }),
       onMessage: (message: ServerMessage) => {
         dispatch({ type: 'server', message });
+        if (message.type === 'room/deleted') {
+          // Don't try to reconnect to a room that no longer exists.
+          conn.close();
+          return;
+        }
         if (message.type === 'snapshot') {
           // After (re)joining, re-send anything the room hasn't confirmed yet,
           // and our cursor position.

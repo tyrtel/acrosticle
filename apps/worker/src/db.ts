@@ -123,21 +123,87 @@ export async function recordRoom(
   room: { roomId: string; createdBy: string | null; title: string | null; createdAt: number },
 ): Promise<void> {
   await db
-    .prepare('INSERT INTO rooms (room_id, created_by, title, created_at) VALUES (?, ?, ?, ?)')
-    .bind(room.roomId, room.createdBy, room.title, room.createdAt)
+    .prepare(
+      'INSERT INTO rooms (room_id, created_by, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+    )
+    .bind(room.roomId, room.createdBy, room.title, room.createdAt, room.createdAt)
     .run();
 }
 
-export async function listRoomsCreatedBy(
-  db: D1Database,
-  userId: string,
-): Promise<{ roomId: string; title: string | null; createdAt: number }[]> {
+/** One entry in My puzzles. */
+export interface MyRoom {
+  readonly roomId: string;
+  readonly title: string | null;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+  readonly createdByMe: boolean;
+}
+
+/** Rooms the user created or joined, most recently active first. */
+export async function listMyRooms(db: D1Database, userId: string): Promise<MyRoom[]> {
   const { results } = await db
     .prepare(
-      `SELECT room_id, title, created_at FROM rooms
-       WHERE created_by = ? ORDER BY created_at DESC, room_id`,
+      `SELECT room_id, title, created_at, COALESCE(updated_at, created_at) AS updated_at,
+              created_by = ?1 AS created_by_me
+       FROM rooms
+       WHERE created_by = ?1 OR room_id IN (SELECT room_id FROM room_visits WHERE user_id = ?1)
+       ORDER BY updated_at DESC, room_id
+       LIMIT 200`,
     )
     .bind(userId)
-    .all<{ room_id: string; title: string | null; created_at: number }>();
-  return results.map((r) => ({ roomId: r.room_id, title: r.title, createdAt: r.created_at }));
+    .all<{
+      room_id: string;
+      title: string | null;
+      created_at: number;
+      updated_at: number;
+      created_by_me: number | null;
+    }>();
+  return results.map((r) => ({
+    roomId: r.room_id,
+    title: r.title,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+    createdByMe: r.created_by_me === 1,
+  }));
+}
+
+/** Remembers that a signed-in user joined a room, for My puzzles. */
+export async function recordVisit(
+  db: D1Database,
+  userId: string,
+  roomId: string,
+  now: number,
+): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO room_visits (user_id, room_id, last_visited_at) VALUES (?, ?, ?)
+       ON CONFLICT (user_id, room_id) DO UPDATE SET last_visited_at = excluded.last_visited_at`,
+    )
+    .bind(userId, roomId, now)
+    .run();
+}
+
+/** Marks a room as recently active (someone edited it). */
+export async function touchRoom(db: D1Database, roomId: string, now: number): Promise<void> {
+  await db.prepare('UPDATE rooms SET updated_at = ? WHERE room_id = ?').bind(now, roomId).run();
+}
+
+/** Who created a room: a user id, null for anonymous sample rooms, or undefined if unknown. */
+export async function roomCreator(
+  db: D1Database,
+  roomId: string,
+): Promise<string | null | undefined> {
+  const row = await db
+    .prepare('SELECT created_by FROM rooms WHERE room_id = ?')
+    .bind(roomId)
+    .first<{ created_by: string | null }>();
+  return row ? row.created_by : undefined;
+}
+
+/** Removes a deleted room from everyone's lists. */
+export async function deleteRoomRecords(db: D1Database, roomId: string): Promise<void> {
+  await db.batch([
+    db.prepare('DELETE FROM room_visits WHERE room_id = ?').bind(roomId),
+    db.prepare('DELETE FROM rooms WHERE room_id = ?').bind(roomId),
+  ]);
 }

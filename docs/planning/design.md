@@ -510,6 +510,7 @@ of the Claude call against the sample image could run alongside M1.
 | Phone photos    | Stretch goal. Keep it possible, build it later.                                                                                                                                      |
 | Hosting         | Cloudflare Workers with static assets: one Worker serves the web app, API and rooms. Start on the free plan; expect to need Workers Paid ($5/month) once image parsing ships (§6.5). |
 | My puzzles      | Signed-in users get a list of the rooms they created (M4).                                                                                                                           |
+| Deploys         | Manual with `npm run deploy` (builds, migrates, deploys, smoke-tests). Automatic GitHub deploys maybe later. Live at https://acrosticle.tyrtel.workers.dev.                          |
 | Parse cost      | Reduce where possible. Review the eval results and cost options together once parsing works.                                                                                         |
 
 ### Still open

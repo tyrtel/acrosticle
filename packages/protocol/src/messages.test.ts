@@ -1,4 +1,4 @@
-import type { Letter } from '@acrosticle/core';
+import type { Entry } from '@acrosticle/core';
 import { describe, expect, it } from 'vitest';
 import {
   encodeMessage,
@@ -24,6 +24,14 @@ describe('parseClientMessage', () => {
     expect(parseClientMessage(json({ ...set, value: null })).ok).toBe(true);
   });
 
+  it('accepts lowercase, digits, symbols and accented letters', () => {
+    for (const value of ['q', '7', '&', 'ñ']) {
+      expect(parseClientMessage(json({ type: 'cell/set', cell: 1, value, clientSeq: 0 })).ok).toBe(
+        true,
+      );
+    }
+  });
+
   it('parses presence updates and ping', () => {
     expect(parseClientMessage(json({ type: 'presence/update', cell: null })).ok).toBe(true);
     expect(parseClientMessage(json({ type: 'presence/update', cell: 3 })).ok).toBe(true);
@@ -40,7 +48,7 @@ describe('parseClientMessage', () => {
   const set = { type: 'cell/set', cell: 1, value: 'A', clientSeq: 1 };
   it.each([
     ['unknown type', { type: 'nope' }],
-    ['lowercase letter', { ...set, value: 'q' }],
+    ['a space', { ...set, value: ' ' }],
     ['multi-char value', { ...set, value: 'AB' }],
     ['zero cell', { ...set, cell: 0 }],
     ['fractional cell', { ...set, cell: 1.5 }],
@@ -60,7 +68,7 @@ describe('parseServerMessage', () => {
       grid: { columns: 2, rows: ['1A 2A'] },
       clues: [{ label: 'A', text: 'x', cells: [1, 2] }],
     },
-    cells: [[1, 'Q' as Letter]],
+    cells: [[1, 'Q' as Entry]],
     version: 3,
     you: 'm1',
     members: [{ id: 'm1', name: 'Ada', color: '#c00' }],
@@ -82,8 +90,8 @@ describe('parseServerMessage', () => {
     expect(parseServerMessage(encodeMessage(message))).toEqual({ ok: true, value: message });
   });
 
-  it('rejects a snapshot with a bad letter', () => {
-    expect(parseServerMessage(json({ ...snapshot, cells: [[1, 'q']] })).ok).toBe(false);
+  it('rejects a snapshot with a multi-character entry', () => {
+    expect(parseServerMessage(json({ ...snapshot, cells: [[1, 'ab']] })).ok).toBe(false);
   });
 
   it('rejects client-only messages', () => {

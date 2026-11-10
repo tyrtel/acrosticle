@@ -1,9 +1,10 @@
-import type { Letter } from '@acrosticle/core';
+import type { Entry } from '@acrosticle/core';
 import type { PuzzleFile } from '@acrosticle/protocol';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FakeBackend, type FakeRoom } from '../../../tests/support/fakeBackend';
+import { FakeSocket } from '../../../tests/support/fakeSocket';
 import { SessionProvider } from '../account';
 import { RoomPage } from './RoomPage';
 
@@ -69,6 +70,19 @@ describe('RoomPage', () => {
     expect(await screen.findByDisplayValue('Ada Lovelace')).toHaveFocus();
   });
 
+  it('suggests the account name, even when sign-in status arrives after the form', async () => {
+    backend.signIn({ name: 'Ada Lovelace' });
+    backend.meDelayMs = 100;
+    render(
+      <SessionProvider>
+        <RoomPage roomId={ROOM_ID} />
+      </SessionProvider>,
+    );
+    const input = await screen.findByLabelText(/Your name/);
+    expect(await screen.findByDisplayValue('Ada Lovelace')).toBe(input);
+    expect(screen.getByRole('button', { name: 'Join' })).toBeEnabled();
+  });
+
   it('joins straight away with a remembered name', async () => {
     window.localStorage.setItem('acrosticle:name', 'Bo');
     render(<RoomPage roomId={ROOM_ID} />);
@@ -77,7 +91,7 @@ describe('RoomPage', () => {
   });
 
   it('shows letters already in the room', async () => {
-    room.cells.set(3, 'R' as Letter);
+    room.cells.set(3, 'R' as Entry);
     await joinAs('Ada');
     expect(square(3)).toHaveAccessibleName('Square 3, clue A, R');
   });
@@ -85,7 +99,7 @@ describe('RoomPage', () => {
   it('sends typed letters to the room', async () => {
     const user = await joinAs('Ada');
     await user.click(square(1));
-    await user.keyboard('xy');
+    await user.keyboard('XY');
     expect(square(1)).toHaveAccessibleName('Square 1, clue A, X');
     expect([...room.cells]).toEqual([
       [1, 'X'],
@@ -96,7 +110,7 @@ describe('RoomPage', () => {
   it("shows other solvers' letters and cursors", async () => {
     await joinAs('Ada');
     act(() => {
-      room.remoteEdit(5, 'Z' as Letter);
+      room.remoteEdit(5, 'Z' as Entry);
       room.remoteVisitor({ id: 'cy', name: 'Cy', color: '#00aa00' }, 4);
     });
     expect(square(5)).toHaveAccessibleName('Square 5, clue A, Z');
@@ -105,13 +119,22 @@ describe('RoomPage', () => {
     expect(screen.getByRole('list', { name: 'People in this room' })).toHaveTextContent('Cy');
   });
 
+  it('says so when the creator deletes the room, and stops reconnecting', async () => {
+    await joinAs('Ada');
+    act(() => room.deleteForEveryone());
+    expect(screen.getByRole('heading', { name: 'This puzzle was deleted' })).toBeInTheDocument();
+    const sockets = FakeSocket.instances.length;
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect(FakeSocket.instances).toHaveLength(sockets);
+  });
+
   it('keeps working through a dropped connection, sending offline edits on reconnect', async () => {
     const user = await joinAs('Ada');
     act(() => room.dropAll());
     expect(screen.getByRole('status')).toHaveTextContent('Reconnecting…');
 
     await user.click(square(5));
-    await user.keyboard('k');
+    await user.keyboard('K');
     expect(square(5)).toHaveAccessibleName('Square 5, clue A, K');
     expect(room.cells.has(5)).toBe(false);
 

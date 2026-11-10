@@ -14,6 +14,8 @@ export function jsonBody(value: unknown): RequestInit {
   };
 }
 
+type Failure = { ok: false; status: number; error: string };
+
 /**
  * Calls our API with a timeout and validates the response against a schema.
  * Failures come back as values with a message fit to show the user.
@@ -23,6 +25,25 @@ export async function request<T>(
   schema: Parameters<typeof validateWith<T>>[0],
   init?: RequestInit,
 ): Promise<ApiResult<T>> {
+  const response = await call(url, init);
+  if (!response.ok) return response;
+  const parsed = validateWith(schema, response.json);
+  return parsed.ok
+    ? parsed
+    : { ok: false, status: response.status, error: 'The server sent an unexpected response.' };
+}
+
+/** Like `request`, for calls that answer with no body (e.g. 204 No Content). */
+export async function send(url: string, init: RequestInit): Promise<ApiResult<null>> {
+  const response = await call(url, init);
+  return response.ok ? { ok: true, value: null } : response;
+}
+
+/** Fetch with a timeout; turns network errors and error responses into readable failures. */
+async function call(
+  url: string,
+  init?: RequestInit,
+): Promise<{ ok: true; status: number; json: unknown } | Failure> {
   let res: Response;
   try {
     res = await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
@@ -38,21 +59,13 @@ export async function request<T>(
   }
 
   const json: unknown = await res.json().catch(() => null);
-  if (!res.ok) {
-    const error = validateWith(ApiError, json);
-    const issues =
-      error.ok && error.value.issues
-        ? ` ${error.value.issues.map((i) => i.message).join(' ')}`
-        : '';
-    return {
-      ok: false,
-      status: res.status,
-      error: error.ok ? `${error.value.error}${issues}` : `Request failed (${res.status}).`,
-    };
-  }
-
-  const parsed = validateWith(schema, json);
-  return parsed.ok
-    ? parsed
-    : { ok: false, status: res.status, error: 'The server sent an unexpected response.' };
+  if (res.ok) return { ok: true, status: res.status, json };
+  const error = validateWith(ApiError, json);
+  const issues =
+    error.ok && error.value.issues ? ` ${error.value.issues.map((i) => i.message).join(' ')}` : '';
+  return {
+    ok: false,
+    status: res.status,
+    error: error.ok ? `${error.value.error}${issues}` : `Request failed (${res.status}).`,
+  };
 }

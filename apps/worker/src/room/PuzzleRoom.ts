@@ -1,4 +1,4 @@
-import { isLetter, puzzleFromCompact, type Letter } from '@acrosticle/core';
+import { isEntry, puzzleFromCompact, type Entry } from '@acrosticle/core';
 import {
   encodeMessage,
   parseClientMessage,
@@ -9,9 +9,16 @@ import {
   type ServerMessage,
 } from '@acrosticle/protocol';
 import { DurableObject } from 'cloudflare:workers';
+import { touchRoom } from '../db';
 import { pickColor } from './colors';
 
 const NORMAL_CLOSURE = 1000;
+/** Close code sent to everyone in a room when it's deleted. */
+export const ROOM_DELETED_CLOSE_CODE = 4404;
+/** The router passes the room's id on every join. */
+export const ROOM_ID_HEADER = 'X-Acrosticle-Room-Id';
+/** How often (at most) edits refresh the room's "last active" time in D1. */
+const ACTIVITY_WRITE_INTERVAL_MS = 30_000;
 const RESERVED_CLOSE_CODES = new Set([1005, 1006, 1015]);
 
 /** Per-connection state, stored on the socket so it survives hibernation. */
@@ -40,10 +47,15 @@ interface RoomInfo {
 export class PuzzleRoom extends DurableObject<Env> {
   private readonly sql: SqlStorage;
   private loaded: RoomInfo | null = null;
+  private lastActivityWrite = 0;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.sql = ctx.storage.sql;
+    this.createSchema();
+  }
+
+  private createSchema(): void {
     this.sql.exec('CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
     this.sql.exec(
       `CREATE TABLE IF NOT EXISTS cells (
@@ -59,13 +71,14 @@ export class PuzzleRoom extends DurableObject<Env> {
    * Stores the puzzle for a new room. Called once, by the router, right after
    * the puzzle passed validation. Returns false if the room already exists.
    */
-  initialize(puzzle: PuzzleFile, createdBy: string | null): boolean {
+  initialize(roomId: string, puzzle: PuzzleFile, createdBy: string | null): boolean {
     if (this.readMeta('puzzle') !== null) return false;
     const converted = puzzleFromCompact(puzzle);
     if (!converted.ok) throw new Error(`initialize() got an invalid puzzle: ${converted.error}`);
     const cellCount = converted.puzzle.grid.squares.filter((s) => s.kind === 'letter').length;
 
     this.ctx.storage.transactionSync(() => {
+      this.writeMeta('roomId', roomId);
       this.writeMeta('puzzle', JSON.stringify(puzzle));
       this.writeMeta('cellCount', String(cellCount));
       this.writeMeta('version', '0');
@@ -89,6 +102,8 @@ export class PuzzleRoom extends DurableObject<Env> {
     if (!this.room()) {
       return Response.json({ error: 'Room not found' }, { status: 404 });
     }
+    const roomId = request.headers.get(ROOM_ID_HEADER);
+    if (roomId && this.readMeta('roomId') === null) this.writeMeta('roomId', roomId);
 
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server);
@@ -199,6 +214,40 @@ export class PuzzleRoom extends DurableObject<Env> {
     });
 
     this.broadcast({ type: 'cell/updated', cell, value, version, by: me.memberId, clientSeq });
+    this.noteActivity();
+  }
+
+  /** Refreshes the room's "last active" time for My puzzles, at most every 30 seconds. */
+  private noteActivity(): void {
+    const now = Date.now();
+    if (now - this.lastActivityWrite < ACTIVITY_WRITE_INTERVAL_MS) return;
+    const roomId = this.readMeta('roomId');
+    if (!roomId) return;
+    this.lastActivityWrite = now;
+    this.ctx.waitUntil(
+      touchRoom(this.env.DB, roomId, now).catch((error: unknown) => {
+        console.error('Could not record room activity', error);
+      }),
+    );
+  }
+
+  /**
+   * Deletes the room for everyone: tells members, disconnects them, and wipes
+   * the room's storage. Called by the router after checking the creator.
+   */
+  async destroy(): Promise<void> {
+    this.broadcast({ type: 'room/deleted' });
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        ws.close(ROOM_DELETED_CLOSE_CODE, 'Puzzle deleted');
+      } catch {
+        // Already closing.
+      }
+    }
+    await this.ctx.storage.deleteAll();
+    this.loaded = null;
+    // Keep the empty tables so later lookups find "no room" instead of failing.
+    this.createSchema();
   }
 
   private updatePresence(ws: WebSocket, me: Attachment, cell: number | null): void {
@@ -218,9 +267,7 @@ export class PuzzleRoom extends DurableObject<Env> {
     const cells = this.sql
       .exec<{ cell: number; letter: string }>('SELECT cell, letter FROM cells ORDER BY cell')
       .toArray()
-      .flatMap(({ cell, letter }): [number, Letter][] =>
-        isLetter(letter) ? [[cell, letter]] : [],
-      );
+      .flatMap(({ cell, letter }): [number, Entry][] => (isEntry(letter) ? [[cell, letter]] : []));
     const joined = this.joinedAttachments();
 
     return {

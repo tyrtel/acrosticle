@@ -1,4 +1,4 @@
-import { normalizeLetter, type View } from '@acrosticle/core';
+import { normalizeEntry, type View } from '@acrosticle/core';
 import type { SolverAction } from './solverReducer';
 
 /** The parts of a keyboard event the keymap needs (easy to build in tests). */
@@ -16,7 +16,7 @@ export interface KeyInput {
  *
  * | Key           | Grid view                  | Clue view                    |
  * | ------------- | -------------------------- | ---------------------------- |
- * | A–Z           | type, advance              | type, advance                |
+ * | Any character | type, advance              | type, advance                |
  * | Arrows        | move in the grid           | ←/→ within clue, ↑/↓ clues   |
  * | Tab / ⇧Tab    | next / previous clue       | next / previous clue         |
  * | Backspace     | clear, or back and clear   | clear, or back and clear     |
@@ -45,7 +45,8 @@ export function keyToAction(input: KeyInput, view: View): SolverAction | null {
       return view === 'grid' ? { type: 'move', direction: 'down' } : { type: 'jumpClue', delta: 1 };
   }
 
-  if (input.key.length !== 1) return null;
-  const letter = normalizeLetter(input.key);
-  return letter ? { type: 'input', letter } : null;
+  // Count characters, not UTF-16 units: some symbols and scripts take two units.
+  if ([...input.key].length !== 1) return null;
+  const entry = normalizeEntry(input.key);
+  return entry ? { type: 'input', entry } : null;
 }

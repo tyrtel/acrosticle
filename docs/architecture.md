@@ -33,12 +33,13 @@
 | `GET /api/health`               | Liveness check                                                                                                                     |
 | `POST /api/rooms`               | Create a room: `{ sample: "diplo-crostic-37" }` (anyone) or `{ puzzle }` (signed-in, allowlisted; validated). Returns `{ roomId }` |
 | `GET /api/rooms/:id`            | Check a room exists before joining; `{ roomId, title }` or 404                                                                     |
+| `DELETE /api/rooms/:id`         | Delete a room for everyone (its creator only); members get `room/deleted`                                                          |
 | `GET /api/rooms/:id/ws`         | WebSocket upgrade into the room                                                                                                    |
 | `GET /api/auth/google`          | Start Google sign-in (`?returnTo=/path`)                                                                                           |
 | `GET /api/auth/google/callback` | Google returns here; sets the session cookie                                                                                       |
 | `POST /api/auth/logout`         | End the session                                                                                                                    |
 | `GET /api/me`                   | `{ user, canCreate, signInConfigured }`; extends an ageing session                                                                 |
-| `GET /api/me/rooms`             | Rooms the signed-in user created, newest first                                                                                     |
+| `GET /api/me/rooms`             | Rooms the signed-in user created or joined, most recently active first                                                             |
 
 Room ids are 128 random bits (22 base64url characters). The link is the access control for solving.
 

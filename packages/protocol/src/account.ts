@@ -19,13 +19,17 @@ export const MeResponse = z.object({
 });
 export type MeResponse = z.infer<typeof MeResponse>;
 
-/** Response to `GET /api/me/rooms`: rooms the signed-in user created, newest first. */
+/** Response to `GET /api/me/rooms`: rooms the signed-in user created or joined, most recently active first. */
 export const MyRoomsResponse = z.object({
   rooms: z.array(
     z.object({
       roomId: RoomId,
       title: z.string().nullable(),
       createdAt: z.number().int(),
+      /** When anyone last edited the room (to within about 30 seconds). */
+      updatedAt: z.number().int(),
+      /** Only the creator can delete a room. */
+      createdByMe: z.boolean(),
     }),
   ),
 });

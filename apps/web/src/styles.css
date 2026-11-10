@@ -1,45 +1,39 @@
 :root {
+  /*
+   * Theme: follows the device unless the reader picked one (data-theme on <html>,
+   * set by the theme button and by the inline script in index.html before first paint).
+   * Every color below is a light-dark() pair, so both themes are defined in one place.
+   */
   color-scheme: light dark;
   font-family: system-ui, sans-serif;
   /* Larger type on bigger screens: every rem-based size scales with this. */
   font-size: 112.5%;
   line-height: 1.5;
 
-  --bg: #fbfaf7;
-  --surface: #ffffff;
-  --text: #1d1d1f;
-  --text-muted: #6b6b70;
-  --border: #c9c7c1;
-  --border-strong: #3a3a3c;
-  --block: #26262a;
-  --accent: #2f6fde;
-  --select: #ffd84d;
-  --word: #dce8fb;
-  --clue: #eef3fb;
-  --focus-ring: #2f6fde;
-  --error: #c62828;
-  --warning: #d98a00;
-  --info: #6b8fd6;
+  --bg: light-dark(#fbfaf7, #18181b);
+  --surface: light-dark(#ffffff, #222226);
+  --text: light-dark(#1d1d1f, #ececef);
+  --text-muted: light-dark(#6b6b70, #a8a8b0);
+  --border: light-dark(#c9c7c1, #4a4a52);
+  --border-strong: light-dark(#3a3a3c, #b8b8c0);
+  --block: light-dark(#26262a, #050506);
+  --accent: light-dark(#2f6fde, #7aa7f5);
+  --select: light-dark(#ffd84d, #8a6a10);
+  --word: light-dark(#dce8fb, #2b3c5c);
+  --clue: light-dark(#eef3fb, #26303f);
+  --focus-ring: light-dark(#2f6fde, #7aa7f5);
+  --error: light-dark(#c62828, #ef6461);
+  --warning: light-dark(#b36b00, #f0b43c);
+  --info: light-dark(#4a73c9, #8fb0ee);
+  --success: light-dark(#1b7a3a, #5fd48a);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #18181b;
-    --surface: #222226;
-    --text: #ececef;
-    --text-muted: #a0a0a8;
-    --border: #4a4a52;
-    --border-strong: #b8b8c0;
-    --block: #050506;
-    --accent: #7aa7f5;
-    --select: #b8901a;
-    --word: #2b3c5c;
-    --clue: #26303f;
-    --focus-ring: #7aa7f5;
-    --error: #ef6461;
-    --warning: #f0b43c;
-    --info: #8fb0ee;
-  }
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 @media (max-width: 600px) {
@@ -97,4 +91,29 @@ textarea {
 
 .note {
   color: var(--text-muted);
+}
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+}
+
+/* Hidden on screen, still read by screen readers. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

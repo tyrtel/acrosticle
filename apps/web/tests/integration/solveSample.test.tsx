@@ -34,13 +34,13 @@ describe('solving the sample puzzle', () => {
 
     // Clue A, "Daughter to Brabantio": its first blank is square 138.
     await user.click(blank(138));
-    await user.keyboard('desdemona');
+    await user.keyboard('DESDEMONA');
     expect(square(5)).toHaveAccessibleName('Square 5, clue A, E');
     expect(square(232)).toHaveAccessibleName('Square 232, clue A, D');
 
     // Now type in the grid: squares 1-4 are clues O, E, P and D.
     await user.click(square(1));
-    await user.keyboard('mdtn');
+    await user.keyboard('MDTN');
     expect(blank(2)).toHaveAccessibleName('Clue E, letter 4 of 9, square 2, D');
     expect(screen.getByText('13 / 232 squares filled')).toBeInTheDocument();
 

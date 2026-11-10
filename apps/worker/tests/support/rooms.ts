@@ -44,6 +44,9 @@ export class TestClient {
   private readonly waiters: ((message: ServerMessage) => void)[] = [];
 
   private constructor(readonly ws: WebSocket) {
+    this.closed = new Promise((resolve) => {
+      ws.addEventListener('close', (event) => resolve(event.code));
+    });
     ws.addEventListener('message', (event) => {
       const parsed = parseServerMessage(String(event.data));
       if (!parsed.ok) throw new Error(`Server sent an invalid message: ${parsed.error}`);
@@ -53,9 +56,12 @@ export class TestClient {
     });
   }
 
-  static async connect(roomId: string): Promise<TestClient> {
+  /** Resolves with the close code when the server closes the connection. */
+  readonly closed: Promise<number>;
+
+  static async connect(roomId: string, cookie?: string): Promise<TestClient> {
     const res = await exports.default.fetch(`${BASE}/api/rooms/${roomId}/ws`, {
-      headers: { Upgrade: 'websocket' },
+      headers: { Upgrade: 'websocket', ...(cookie ? { Cookie: cookie } : {}) },
     });
     expect(res.status).toBe(101);
     if (!res.webSocket) throw new Error('No WebSocket on response');
@@ -64,8 +70,8 @@ export class TestClient {
   }
 
   /** Connects and joins, returning the client and its snapshot. */
-  static async join(roomId: string, name = 'Ada') {
-    const client = await TestClient.connect(roomId);
+  static async join(roomId: string, name = 'Ada', cookie?: string) {
+    const client = await TestClient.connect(roomId, cookie);
     client.send({ type: 'join', name });
     const snapshot = await client.next('snapshot');
     return { client, snapshot };

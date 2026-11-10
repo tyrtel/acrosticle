@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { App } from '../../src/App';
@@ -56,9 +56,16 @@ describe('importing, fixing and solving a puzzle', () => {
     await user.click(screen.getByRole('button', { name: 'Try the sample puzzle' }));
     await screen.findByLabelText(/Your name/);
 
-    await user.click(screen.getByRole('link', { name: 'My puzzles' }));
-    expect(window.location.pathname).toBe('/my');
-    const link = await screen.findByRole('link', { name: 'Diplo-Crostic No. 37' });
+    await user.click(screen.getByRole('button', { name: 'My puzzles' }));
+    expect(window.location.search).toBe('?panel=my');
+    const panel = screen.getByRole('dialog', { name: 'My puzzles' });
+    const link = await within(panel).findByRole('link', { name: 'Diplo-Crostic No. 37' });
     expect(link).toHaveAttribute('href', '/r/Created000000000000001');
+    expect(within(panel).getByText('Created by you')).toBeInTheDocument();
+
+    // Opening a puzzle from the panel closes it.
+    await user.click(link);
+    expect(window.location.search).toBe('');
+    expect(panel).not.toHaveAttribute('open');
   });
 });

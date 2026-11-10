@@ -43,7 +43,6 @@ describe('AccountBar', () => {
     const photo = container.querySelector('img');
     expect(photo).toHaveAttribute('src', 'https://example.com/ada.png');
     expect(photo).toHaveAttribute('referrerpolicy', 'no-referrer');
-    expect(screen.getByRole('link', { name: 'My puzzles' })).toHaveAttribute('href', '/my');
 
     await user.click(screen.getByRole('button', { name: 'Sign out' }));
     expect(await screen.findByRole('link', { name: 'Sign in with Google' })).toBeInTheDocument();

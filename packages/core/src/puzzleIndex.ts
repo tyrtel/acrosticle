@@ -14,7 +14,7 @@ export interface ClueRef {
  */
 export interface PuzzleIndex {
   readonly puzzle: Puzzle;
-  /** Letter cells in grid reading order. */
+  /** Entry cells in grid reading order. */
   readonly cells: readonly CellNumber[];
   readonly clues: readonly Clue[];
   squareAt(gridIndex: number): GridSquare | undefined;

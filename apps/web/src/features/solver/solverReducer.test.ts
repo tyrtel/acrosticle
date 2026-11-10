@@ -1,10 +1,10 @@
 import {
   buildPuzzleIndex,
   emptySolveState,
-  normalizeLetter,
+  normalizeEntry,
   parseCompactGrid,
   setCell,
-  type Letter,
+  type Entry,
   type Puzzle,
   type Selection,
 } from '@acrosticle/core';
@@ -27,7 +27,7 @@ function tinyPuzzle(): Puzzle {
 }
 
 const index = buildPuzzleIndex(tinyPuzzle());
-const L = (s: string): Letter => normalizeLetter(s) ?? (s as never);
+const L = (s: string): Entry => normalizeEntry(s) ?? (s as never);
 const at = (cell: number, view: 'grid' | 'clue' = 'grid'): Selection => ({ cell, view });
 const run = (
   selection: Selection,
@@ -54,7 +54,7 @@ describe('reduceSolver', () => {
   });
 
   it('types: an edit for the cell, and the cursor advances', () => {
-    expect(run(at(1), { type: 'input', letter: L('X') })).toEqual({
+    expect(run(at(1), { type: 'input', entry: L('X') })).toEqual({
       selection: at(2),
       edit: { cell: 1, value: 'X' },
     });

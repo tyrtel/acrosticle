@@ -10,15 +10,11 @@ beforeEach(() => {
   backend.install();
 });
 
-const importButton = () => screen.getByRole('button', { name: 'Import a puzzle file' });
-
 describe('App', () => {
-  it('renders the home page', async () => {
+  it('renders the home page', () => {
     render(<App />);
     expect(screen.getByRole('heading', { level: 1, name: 'Acrosticle' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Try the sample puzzle' })).toBeEnabled();
-    // One in the header, one next to the disabled Import button.
-    expect(await screen.findAllByRole('link', { name: 'Sign in with Google' })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Try the sample puzzle' })).toBeInTheDocument();
   });
 
   it('shows a not-found message for unknown addresses', () => {
@@ -27,37 +23,52 @@ describe('App', () => {
     expect(screen.getByRole('alert')).toHaveTextContent("There's nothing at this address.");
   });
 
-  it('asks visitors to sign in before importing', async () => {
-    render(<App />);
-    expect(
-      await screen.findByText('Sign in to import your own puzzles. The sample needs no account.'),
-    ).toBeInTheDocument();
-    expect(importButton()).toBeDisabled();
-  });
-
-  it('explains when a signed-in account is not on the allowlist', async () => {
-    backend.signIn({ canCreate: false, email: 'cy@example.com' });
-    render(<App />);
-    expect(
-      await screen.findByText(/Your account \(cy@example\.com\) isn't enabled/),
-    ).toBeInTheDocument();
-    expect(importButton()).toBeDisabled();
-  });
-
-  it('lets allowlisted accounts import', async () => {
+  it('"New puzzle" returns to a fresh start screen from anywhere', async () => {
     backend.signIn();
     const user = userEvent.setup();
     render(<App />);
-    await screen.findByText('Ada Lovelace');
-    expect(importButton()).toBeEnabled();
-    await user.click(importButton());
+    await user.click(await screen.findByRole('button', { name: 'Import a puzzle file' }));
     expect(screen.getByRole('heading', { name: 'Import a puzzle file' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'New puzzle' }));
+    expect(screen.getByRole('button', { name: 'Try the sample puzzle' })).toBeInTheDocument();
+
+    window.history.pushState(null, '', '/nowhere');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    await user.click(await screen.findByRole('button', { name: 'New puzzle' }));
+    expect(window.location.pathname).toBe('/');
   });
 
-  it('starts sample rooms without signing in', async () => {
+  it('shows My puzzles only to signed-in users, and opens the panel', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<App />);
+    await screen.findAllByRole('link', { name: 'Sign in with Google' });
+    expect(screen.queryByRole('button', { name: 'My puzzles' })).toBeNull();
+    unmount();
+
+    backend.signIn();
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: 'My puzzles' }));
+    expect(screen.getByRole('dialog', { name: 'My puzzles' })).toHaveAttribute('open');
+  });
+
+  it('turns old /my links into the panel', async () => {
+    window.history.replaceState(null, '', '/my');
+    render(<App />);
+    expect(await screen.findByRole('dialog', { name: 'My puzzles' })).toHaveAttribute('open');
+    expect(window.location.pathname + window.location.search).toBe('/?panel=my');
+  });
+
+  it('cycles the theme from the header: System → Light → Dark', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: 'Try the sample puzzle' }));
-    expect(window.location.pathname).toBe('/r/Created000000000000001');
+    const button = screen.getByRole('button', { name: /^Theme: System/ });
+    await user.click(button);
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(button).toHaveAccessibleName('Theme: Light. Switch to Dark.');
+    await user.click(button);
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    await user.click(button);
+    expect(document.documentElement.dataset.theme).toBeUndefined();
   });
 });

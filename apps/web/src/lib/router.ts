@@ -31,9 +31,27 @@ function subscribe(onChange: () => void): () => void {
 }
 
 const getPathname = () => window.location.pathname;
+const getSearch = () => window.location.search;
 
 /** The current route; re-renders on navigation and browser back/forward. */
 export function useRoute(): Route {
   const pathname = useSyncExternalStore(subscribe, getPathname);
   return parseRoute(pathname);
+}
+
+/** One query parameter of the current address (e.g. `panel` in `/?panel=my`), live. */
+export function useSearchParam(name: string): string | null {
+  const search = useSyncExternalStore(subscribe, getSearch);
+  return new URLSearchParams(search).get(name);
+}
+
+/**
+ * Sets or removes one query parameter, keeping the rest of the address. Adds a
+ * history entry, so the browser's Back button undoes it (e.g. closes a panel).
+ */
+export function setSearchParam(name: string, value: string | null): void {
+  const url = new URL(window.location.href);
+  if (value === null) url.searchParams.delete(name);
+  else url.searchParams.set(name, value);
+  navigate(`${url.pathname}${url.search}${url.hash}`);
 }

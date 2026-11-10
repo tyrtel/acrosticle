@@ -1,4 +1,4 @@
-import type { Letter } from './letters';
+import type { Entry } from './entries';
 import type { CellNumber, ClueLabel } from './puzzle';
 import type { PuzzleIndex } from './puzzleIndex';
 import { getCell, type CellEdit, type SolveState } from './solveState';
@@ -100,8 +100,8 @@ export function jumpToClue(
   return { cell, view: 'clue' };
 }
 
-/** Types a letter at the cursor, then advances within the active view. */
-export function enterLetter(index: PuzzleIndex, selection: Selection, letter: Letter): EditResult {
+/** Types an entry at the cursor, then advances within the active view. */
+export function enterEntry(index: PuzzleIndex, selection: Selection, letter: Entry): EditResult {
   return {
     edit: { cell: selection.cell, value: letter },
     selection: step(index, selection, 1),
@@ -126,7 +126,7 @@ export function erase(index: PuzzleIndex, state: SolveState, selection: Selectio
  * The first letter of each clue's answer, in clue order. When solved these
  * spell the author and title of the quotation's source.
  */
-export function acrosticLetters(index: PuzzleIndex, state: SolveState): (Letter | null)[] {
+export function acrosticLetters(index: PuzzleIndex, state: SolveState): (Entry | null)[] {
   return index.clues.map((clue) => {
     const first = clue.cells[0];
     return first === undefined ? null : getCell(state, first);

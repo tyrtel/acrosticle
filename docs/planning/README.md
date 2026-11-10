@@ -3,6 +3,7 @@
 Feature definitions, requirements, and the roadmap live here.
 
 - [`design.md`](design.md): product and technical design (draft)
+- [`features.md`](features.md): requested features backlog, with recommendations and open questions
 
 Planned documents:
 

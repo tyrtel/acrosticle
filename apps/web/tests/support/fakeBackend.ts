@@ -1,4 +1,4 @@
-import type { Letter } from '@acrosticle/core';
+import type { Entry } from '@acrosticle/core';
 import type {
   ClientMessage,
   Member,
@@ -18,9 +18,11 @@ const COLORS = ['#e4572e', '#1b998b', '#7b2cbf'];
  */
 export class FakeBackend {
   readonly rooms = new Map<string, FakeRoom>();
-  /** Rooms the signed-in user created, oldest first. */
+  /** The signed-in user's puzzles (created or joined); listed most recently active first. */
   readonly myRooms: MyRoomsResponse['rooms'][number][] = [];
   me: MeResponse = { user: null, canCreate: false, signInConfigured: true };
+  /** Delay /api/me answers, to test the session arriving after other data. */
+  meDelayMs = 0;
   /** Make the next room creation fail with this response. */
   failNextCreate: { status: number; error: string } | null = null;
   private created = 0;
@@ -67,10 +69,16 @@ export class FakeBackend {
     const json = (status: number, body: unknown) =>
       Promise.resolve(new Response(JSON.stringify(body), { status }));
 
-    if (url === '/api/me') return json(200, this.me);
+    if (url === '/api/me') {
+      const me = this.me;
+      return new Promise((resolve) => setTimeout(resolve, this.meDelayMs)).then(() =>
+        json(200, me),
+      );
+    }
     if (url === '/api/me/rooms') {
       if (!this.me.user) return json(401, { error: 'Sign in to see your puzzles.' });
-      return json(200, { rooms: [...this.myRooms].reverse() });
+      const rooms = [...this.myRooms].sort((a, b) => b.updatedAt - a.updatedAt);
+      return json(200, { rooms });
     }
     if (url === '/api/auth/logout' && init?.method === 'POST') {
       this.me = { user: null, canCreate: false, signInConfigured: this.me.signInConfigured };
@@ -96,23 +104,35 @@ export class FakeBackend {
       const roomId = `Created${String(++this.created).padStart(15, '0')}`;
       this.addRoom(puzzle, roomId);
       if (this.me.user) {
+        const createdAt = Date.UTC(2026, 10, this.created);
         this.myRooms.push({
           roomId,
           title: puzzle.title ?? null,
-          createdAt: Date.UTC(2026, 10, this.created),
+          createdAt,
+          updatedAt: createdAt,
+          createdByMe: true,
         });
       }
       return json(201, { roomId });
     }
     const roomId = /^\/api\/rooms\/([^/]+)$/.exec(url)?.[1];
     const room = roomId === undefined ? undefined : this.rooms.get(roomId);
+    if (room && roomId && init?.method === 'DELETE') {
+      const mine = this.myRooms.find((r) => r.roomId === roomId);
+      if (!this.me.user) return json(401, { error: 'Sign in to delete a puzzle.' });
+      if (!mine?.createdByMe) return json(403, { error: 'Only the creator can delete it.' });
+      room.deleteForEveryone();
+      this.rooms.delete(roomId);
+      this.myRooms.splice(this.myRooms.indexOf(mine), 1);
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
     if (room && roomId) return json(200, { roomId, title: room.puzzle.title ?? null });
     return json(404, { error: 'Room not found' });
   }
 }
 
 export class FakeRoom {
-  readonly cells = new Map<number, Letter>();
+  readonly cells = new Map<number, Entry>();
   version = 0;
   private readonly sockets = new Map<FakeSocket, Member | null>();
   private nextMember = 1;
@@ -126,7 +146,7 @@ export class FakeRoom {
   }
 
   /** Simulates another solver typing. */
-  remoteEdit(cell: number, value: Letter | null, by = 'someone-else'): void {
+  remoteEdit(cell: number, value: Entry | null, by = 'someone-else'): void {
     this.apply(cell, value);
     this.broadcast({ type: 'cell/updated', cell, value, version: this.version, by, clientSeq: 0 });
   }
@@ -135,6 +155,13 @@ export class FakeRoom {
   remoteVisitor(member: Member, cell: number): void {
     this.broadcast({ type: 'member/joined', member });
     this.broadcast({ type: 'presence', member: member.id, cell });
+  }
+
+  /** What the real room does when its creator deletes it. */
+  deleteForEveryone(): void {
+    this.broadcast({ type: 'room/deleted' });
+    for (const socket of this.sockets.keys()) socket.drop();
+    this.sockets.clear();
   }
 
   /** Simulates the network dropping every connection. */
@@ -183,7 +210,7 @@ export class FakeRoom {
     }
   }
 
-  private apply(cell: number, value: Letter | null): void {
+  private apply(cell: number, value: Entry | null): void {
     if (value === null) this.cells.delete(cell);
     else this.cells.set(cell, value);
     this.version += 1;

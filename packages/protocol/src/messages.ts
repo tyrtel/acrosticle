@@ -1,4 +1,4 @@
-import { isLetter } from '@acrosticle/core';
+import { isEntry } from '@acrosticle/core';
 import { z } from 'zod';
 import { validateWith, type ParseResult } from './parseResult';
 import { PuzzleFile } from './puzzleFile';
@@ -13,8 +13,8 @@ import { PuzzleFile } from './puzzleFile';
  */
 
 const cellNumber = z.number().int().positive();
-const letter = z.string().refine(isLetter, 'must be a single uppercase letter A-Z');
-const letterOrNull = letter.nullable();
+const entry = z.string().refine(isEntry, 'must be one letter, digit or symbol (no spaces)');
+const entryOrNull = entry.nullable();
 const memberId = z.string().min(1).max(64);
 
 export const MAX_NAME_LENGTH = 40;
@@ -32,7 +32,7 @@ export const ClientMessage = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('cell/set'),
     cell: cellNumber,
-    value: letterOrNull,
+    value: entryOrNull,
     /** Client-chosen sequence number, echoed back so the sender can confirm its edit. */
     clientSeq: z.number().int().nonnegative(),
   }),
@@ -46,7 +46,7 @@ export const ServerMessage = z.discriminatedUnion('type', [
     type: z.literal('snapshot'),
     puzzle: PuzzleFile,
     /** Filled cells as [cell, letter] pairs. */
-    cells: z.array(z.tuple([cellNumber, letter])),
+    cells: z.array(z.tuple([cellNumber, entry])),
     version: z.number().int().nonnegative(),
     /** The receiving client's own member id. */
     you: memberId,
@@ -56,7 +56,7 @@ export const ServerMessage = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('cell/updated'),
     cell: cellNumber,
-    value: letterOrNull,
+    value: entryOrNull,
     version: z.number().int().positive(),
     by: memberId,
     clientSeq: z.number().int().nonnegative(),
@@ -66,6 +66,8 @@ export const ServerMessage = z.discriminatedUnion('type', [
   z.object({ type: z.literal('member/left'), member: memberId }),
   z.object({ type: z.literal('pong') }),
   z.object({ type: z.literal('error'), message: z.string() }),
+  /** The creator deleted the room; the connection closes right after. */
+  z.object({ type: z.literal('room/deleted') }),
 ]);
 export type ServerMessage = z.infer<typeof ServerMessage>;
 

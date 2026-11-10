@@ -2,15 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { keyToAction } from './keymap';
 
 describe('keyToAction', () => {
-  it('types letters, normalized to uppercase', () => {
-    expect(keyToAction({ key: 'q' }, 'grid')).toEqual({ type: 'input', letter: 'Q' });
+  it('types any single character, keeping its case', () => {
+    expect(keyToAction({ key: 'q' }, 'grid')).toEqual({ type: 'input', entry: 'q' });
     expect(keyToAction({ key: 'Q', shiftKey: true }, 'clue')).toEqual({
       type: 'input',
-      letter: 'Q',
+      entry: 'Q',
+    });
+    expect(keyToAction({ key: '7' }, 'grid')).toEqual({ type: 'input', entry: '7' });
+    expect(keyToAction({ key: '?' }, 'grid')).toEqual({ type: 'input', entry: '?' });
+    expect(keyToAction({ key: 'é' }, 'grid')).toEqual({ type: 'input', entry: 'é' });
+  });
+
+  it('counts characters, not UTF-16 units', () => {
+    // U+1D49C (mathematical script A) takes two UTF-16 units.
+    expect(keyToAction({ key: '\u{1D49C}' }, 'grid')).toEqual({
+      type: 'input',
+      entry: '\u{1D49C}',
     });
   });
 
-  it.each(['1', ' ', '?', 'F5', 'Shift', 'Escape'])('ignores %j', (key) => {
+  it.each([' ', 'F5', 'Shift', 'Escape', 'Dead'])('ignores %j', (key) => {
     expect(keyToAction({ key }, 'grid')).toBeNull();
   });
 

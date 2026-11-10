@@ -2,6 +2,8 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "types": ["node"],
+    // E2E tests run some code in the browser (page.evaluate).
+    "lib": ["ES2023", "DOM"],
     "allowImportingTsExtensions": true
   },
   "include": ["vitest.config.ts", "playwright.config.ts", "tests/e2e/**/*.ts", "scripts/**/*.ts"]

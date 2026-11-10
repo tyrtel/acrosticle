@@ -18,9 +18,20 @@ describe('MeResponse', () => {
 
 describe('MyRoomsResponse', () => {
   it('requires valid room ids', () => {
-    const room = { roomId: 'AbCdEfGhIjKlMnOpQrSt_-', title: null, createdAt: 1 };
+    const room = {
+      roomId: 'AbCdEfGhIjKlMnOpQrSt_-',
+      title: null,
+      createdAt: 1,
+      updatedAt: 2,
+      createdByMe: false,
+    };
     expect(MyRoomsResponse.safeParse({ rooms: [room] }).success).toBe(true);
     expect(MyRoomsResponse.safeParse({ rooms: [{ ...room, roomId: 'x' }] }).success).toBe(false);
+  });
+
+  it('requires the activity time and the created-by-me flag', () => {
+    const room = { roomId: 'AbCdEfGhIjKlMnOpQrSt_-', title: null, createdAt: 1 };
+    expect(MyRoomsResponse.safeParse({ rooms: [room] }).success).toBe(false);
   });
 });
 

@@ -1,9 +1,9 @@
 import fixture from '../../../../samples/puzzles/diplo-crostic-37.json';
 import {
-  normalizeLetter,
+  normalizeEntry,
   parseCompactGrid,
   puzzleFromCompact,
-  type Letter,
+  type Entry,
   type Puzzle,
 } from '../../src';
 
@@ -51,9 +51,9 @@ export function diploCrostic37({ asPrinted = false } = {}): Puzzle {
   return result.puzzle;
 }
 
-/** Converts a test string to a Letter, failing loudly on bad test data. */
-export function letter(s: string): Letter {
-  const l = normalizeLetter(s);
+/** Converts a test string to a Entry, failing loudly on bad test data. */
+export function letter(s: string): Entry {
+  const l = normalizeEntry(s);
   if (!l) throw new Error(`Bad test letter: ${s}`);
   return l;
 }

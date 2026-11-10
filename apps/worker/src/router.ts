@@ -10,7 +10,8 @@ import {
 } from '@acrosticle/protocol';
 import { appOrigin, canCreate, getCurrentUser } from './auth';
 import { finishGoogleSignIn, logout, me, myRooms, startGoogleSignIn } from './authRoutes';
-import { recordRoom } from './db';
+import { deleteRoomRecords, recordRoom, recordVisit, roomCreator } from './db';
+import { ROOM_ID_HEADER } from './room/PuzzleRoom';
 import { newRoomId } from './roomId';
 import { SAMPLE_PUZZLES } from './samples';
 
@@ -20,14 +21,19 @@ export const MAX_CREATE_BODY_BYTES = 100_000;
 const ROOM_PATH = /^\/api\/rooms\/([^/]+)(\/ws)?$/;
 
 /** Top-level HTTP routing. Keep handlers thin; real logic lives in the room or in core. */
-export async function route(request: Request, env: Env): Promise<Response> {
+export async function route(
+  request: Request,
+  env: Env,
+  ctx: Pick<ExecutionContext, 'waitUntil'>,
+): Promise<Response> {
   const url = new URL(request.url);
   const { method } = request;
 
   // Defense in depth on top of SameSite cookies: state-changing requests from
   // a browser must come from our own pages.
   const origin = request.headers.get('Origin');
-  if (method === 'POST' && origin !== null && origin !== appOrigin(request, env)) {
+  const changesState = method !== 'GET' && method !== 'HEAD';
+  if (changesState && origin !== null && origin !== appOrigin(request, env)) {
     return apiError(403, 'Cross-site requests are not allowed.');
   }
 
@@ -52,8 +58,9 @@ export async function route(request: Request, env: Env): Promise<Response> {
   const roomId = roomMatch?.[1];
   if (roomId !== undefined && ROOM_ID_PATTERN.test(roomId)) {
     const room = env.PUZZLE_ROOM.getByName(roomId);
-    if (roomMatch?.[2]) return room.fetch(request);
+    if (roomMatch?.[2]) return joinRoom(request, env, ctx, roomId);
     if (method === 'GET') return roomInfo(roomId, await room.info());
+    if (method === 'DELETE') return deleteRoom(request, env, roomId);
   }
 
   return apiError(404, 'Not found');
@@ -95,7 +102,7 @@ async function createRoom(request: Request, env: Env): Promise<Response> {
 
   const roomId = newRoomId();
   const createdBy = user?.id ?? null;
-  const created = await env.PUZZLE_ROOM.getByName(roomId).initialize(puzzle, createdBy);
+  const created = await env.PUZZLE_ROOM.getByName(roomId).initialize(roomId, puzzle, createdBy);
   if (!created) return apiError(500, 'Could not create the room. Please try again.');
   await recordRoom(env.DB, {
     roomId,
@@ -118,6 +125,41 @@ function puzzleIssues(file: PuzzleFile): Response | null {
     .filter((issue) => issue.severity === 'error')
     .map(({ code, message }) => ({ code, message }));
   return apiError(422, 'The puzzle has errors. Fix them before creating a room.', errors);
+}
+
+/** WebSocket upgrade into a room; signed-in users get the room added to My puzzles. */
+async function joinRoom(
+  request: Request,
+  env: Env,
+  ctx: Pick<ExecutionContext, 'waitUntil'>,
+  roomId: string,
+): Promise<Response> {
+  // Tell the room its own id (rooms created before ids were stored learn it here).
+  const forwarded = new Request(request);
+  forwarded.headers.set(ROOM_ID_HEADER, roomId);
+  const response = await env.PUZZLE_ROOM.getByName(roomId).fetch(forwarded);
+  if (response.status === 101) {
+    ctx.waitUntil(
+      getCurrentUser(request, env).then(
+        (user) => user && recordVisit(env.DB, user.id, roomId, Date.now()),
+      ),
+    );
+  }
+  return response;
+}
+
+/** `DELETE /api/rooms/:id`: the creator removes the room and its progress for everyone. */
+async function deleteRoom(request: Request, env: Env, roomId: string): Promise<Response> {
+  const user = await getCurrentUser(request, env);
+  if (!user) return apiError(401, 'Sign in to delete a puzzle.');
+  const creator = await roomCreator(env.DB, roomId);
+  if (creator === undefined) return apiError(404, 'Room not found');
+  if (creator !== user.id)
+    return apiError(403, 'Only the person who created a puzzle can delete it.');
+
+  await env.PUZZLE_ROOM.getByName(roomId).destroy();
+  await deleteRoomRecords(env.DB, roomId);
+  return new Response(null, { status: 204 });
 }
 
 function roomInfo(roomId: string, info: { title: string | null } | null): Response {

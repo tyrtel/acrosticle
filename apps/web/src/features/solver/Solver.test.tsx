@@ -89,7 +89,7 @@ describe('Solver', () => {
   it('typing in the grid fills the matching clue blanks', async () => {
     const { user } = setup();
     await user.click(square(1));
-    await user.keyboard('xy');
+    await user.keyboard('XY');
 
     expect(square(1)).toHaveAccessibleName('Square 1, clue A, X');
     expect(blank(1)).toHaveAccessibleName('Clue A, letter 2 of 3, square 1, X');
@@ -101,7 +101,7 @@ describe('Solver', () => {
   it('typing in a clue fills the matching grid squares, in answer order', async () => {
     const { user, clues } = setup();
     await user.click(blank(3));
-    await user.keyboard('abc');
+    await user.keyboard('ABC');
 
     expect(square(3)).toHaveAccessibleName('Square 3, clue A, A');
     expect(square(1)).toHaveAccessibleName('Square 1, clue A, B');
@@ -109,10 +109,20 @@ describe('Solver', () => {
     expect(clues).toHaveFocus();
   });
 
+  it('keeps what was typed: lowercase, digits, symbols and accents', async () => {
+    const { user } = setup();
+    await user.click(square(1));
+    await user.keyboard('a7?é');
+    expect(square(1)).toHaveAccessibleName('Square 1, clue A, a');
+    expect(square(2)).toHaveAccessibleName('Square 2, clue B, 7');
+    expect(square(3)).toHaveAccessibleName('Square 3, clue A, ?');
+    expect(square(4)).toHaveAccessibleName('Square 4, clue B, é');
+  });
+
   it('shows the acrostic as first letters are filled', async () => {
     const { user } = setup();
     await user.click(blank(3));
-    await user.keyboard('d');
+    await user.keyboard('D');
     expect(screen.getByLabelText('First letters: D blank')).toBeInTheDocument();
   });
 
@@ -159,7 +169,7 @@ describe('Solver', () => {
   it('Backspace clears and moves back', async () => {
     const { user } = setup();
     await user.click(square(1));
-    await user.keyboard('xy{Backspace}{Backspace}');
+    await user.keyboard('XY{Backspace}{Backspace}');
     expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
     expect(square(2)).toHaveAccessibleName('Square 2, clue B, empty');
   });
@@ -176,7 +186,7 @@ describe('Solver', () => {
     const onEdit = vi.fn();
     const { user } = setup({ onEdit });
     await user.click(square(1));
-    await user.keyboard('{ArrowRight}q{Backspace}');
+    await user.keyboard('{ArrowRight}Q{Backspace}');
     expect(onEdit.mock.calls).toEqual([[{ cell: 2, value: 'Q' }], [{ cell: 2, value: null }]]);
   });
 

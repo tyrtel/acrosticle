@@ -11,9 +11,21 @@ test('importing needs sign-in, and says so', async ({ page }) => {
   await expect(page.getByText("Sign-in isn't set up on this server yet.").first()).toBeVisible();
 });
 
-test('My puzzles asks visitors to sign in', async ({ page }) => {
+test('old /my links open the My puzzles panel, which asks visitors to sign in', async ({
+  page,
+}) => {
   await page.goto('/my');
-  await expect(page.getByText("Sign in to see the puzzles you've created.")).toBeVisible();
+  const panel = page.getByRole('dialog', { name: 'My puzzles' });
+  await expect(panel).toBeVisible();
+  await expect(
+    panel.getByText("Sign in to see the puzzles you've created and joined."),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/\?panel=my$/);
+
+  // A real <dialog>: Escape closes it.
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test('a sign-in problem is explained after returning to the app', async ({ page }) => {

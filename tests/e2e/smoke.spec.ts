@@ -12,7 +12,7 @@ test('solving the sample fills the grid from a clue', async ({ page }) => {
 
   // Clue A's first blank is square 138; its second is grid square 5.
   await blank(page, 138).click();
-  await page.keyboard.type('desdemona');
+  await page.keyboard.type('DESDEMONA');
   await expect(page.getByRole('gridcell', { name: 'Square 5, clue A, E' })).toBeVisible();
 });
 

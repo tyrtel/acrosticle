@@ -1,10 +1,10 @@
 import type { Puzzle } from '@acrosticle/core';
 import { roomPath } from '@acrosticle/protocol';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from './components/Link';
 import {
   AccountBar,
-  MyPuzzles,
+  MyPuzzlesPanel,
   SessionProvider,
   SignInButton,
   SignInNotice,
@@ -13,7 +13,8 @@ import {
 import { ImportPuzzle, ReviewPuzzle } from './features/editor';
 import { createRoom, createSampleRoom, RoomPage } from './features/room';
 import type { ApiResult } from './lib/api';
-import { navigate, useRoute } from './lib/router';
+import { ThemeToggle } from './components/ThemeToggle';
+import { navigate, setSearchParam, useRoute, useSearchParam } from './lib/router';
 
 export function App() {
   return (
@@ -25,6 +26,24 @@ export function App() {
 
 function Shell() {
   const route = useRoute();
+  const { me } = useSession();
+  const panelOpen = useSearchParam('panel') === 'my';
+  // Bumped by "New puzzle" so the start screen resets even if it's already showing.
+  const [homeKey, setHomeKey] = useState(0);
+
+  // Old /my links open the panel instead.
+  useEffect(() => {
+    if (route.kind === 'my') {
+      window.history.replaceState(null, '', '/?panel=my');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  }, [route.kind]);
+
+  const newPuzzle = () => {
+    setHomeKey((key) => key + 1);
+    navigate('/');
+  };
+
   return (
     <main className="app">
       <header className="app-header">
@@ -33,13 +52,28 @@ function Shell() {
             Acrosticle
           </Link>
         </h1>
-        <AccountBar />
+        <nav className="app-nav" aria-label="Main">
+          <button type="button" onClick={newPuzzle}>
+            New puzzle
+          </button>
+          {me.user && (
+            <button type="button" onClick={() => setSearchParam('panel', 'my')}>
+              My puzzles
+            </button>
+          )}
+          <ThemeToggle />
+          <AccountBar />
+        </nav>
       </header>
       <SignInNotice />
-      {route.kind === 'home' && <Home />}
-      {route.kind === 'my' && <MyPuzzles />}
+      {(route.kind === 'home' || route.kind === 'my') && <Home key={homeKey} />}
       {route.kind === 'room' && <RoomPage key={route.roomId} roomId={route.roomId} />}
       {route.kind === 'not-found' && <p role="alert">There&apos;s nothing at this address.</p>}
+      <MyPuzzlesPanel
+        open={panelOpen}
+        onClose={() => setSearchParam('panel', null)}
+        onNewPuzzle={newPuzzle}
+      />
     </main>
   );
 }

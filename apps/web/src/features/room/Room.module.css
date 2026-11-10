@@ -21,8 +21,8 @@
 }
 
 .connected {
-  color: #1b7a3a;
-  border-color: #1b7a3a;
+  color: var(--success);
+  border-color: var(--success);
 }
 
 .connecting,

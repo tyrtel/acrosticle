@@ -1,9 +1,8 @@
 import { signInPath } from '@acrosticle/protocol';
-import { Link } from '../../components/Link';
 import styles from './Account.module.css';
 import { useSession } from './sessionContext';
 
-/** Header controls: sign in, or the signed-in user with My puzzles and Sign out. */
+/** Header controls: sign in, or the signed-in user and Sign out. */
 export function AccountBar() {
   const { loaded, me, signOut } = useSession();
   if (!loaded) return null;
@@ -18,7 +17,6 @@ export function AccountBar() {
 
   return (
     <div className={styles.bar}>
-      <Link href="/my">My puzzles</Link>
       <span className={styles.user}>
         {me.user.picture && (
           <img

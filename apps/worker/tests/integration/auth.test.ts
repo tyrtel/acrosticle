@@ -15,6 +15,9 @@ import {
 } from '../support/google';
 import { BASE, postRoom, tinyPuzzleFile } from '../support/rooms';
 
+/** route() only needs waitUntil for joins; these tests don't join rooms. */
+const noWaitUntil = { waitUntil: () => undefined };
+
 afterEach(() => vi.restoreAllMocks());
 
 async function setExpiry(token: string, expiresAt: number) {
@@ -52,10 +55,11 @@ describe('GET /api/auth/google', () => {
   });
 
   it('sends people back with a message when sign-in is not configured', async () => {
-    const res = await route(new Request(`${BASE}/api/auth/google`), {
-      ...env,
-      GOOGLE_CLIENT_ID: '',
-    });
+    const res = await route(
+      new Request(`${BASE}/api/auth/google`),
+      { ...env, GOOGLE_CLIENT_ID: '' },
+      noWaitUntil,
+    );
     expect(res.headers.get('Location')).toBe('https://acrosticle.test/?signin=unconfigured');
   });
 });
@@ -175,7 +179,11 @@ describe('GET /api/me', () => {
   });
 
   it('reports when sign-in is not configured', async () => {
-    const res = await route(new Request(`${BASE}/api/me`), { ...env, GOOGLE_CLIENT_SECRET: '' });
+    const res = await route(
+      new Request(`${BASE}/api/me`),
+      { ...env, GOOGLE_CLIENT_SECRET: '' },
+      noWaitUntil,
+    );
     expect(await res.json()).toMatchObject({ signInConfigured: false });
   });
 

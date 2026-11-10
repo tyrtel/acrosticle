@@ -68,8 +68,10 @@ export function RoomPage({ roomId, createSocket }: RoomPageProps) {
 
 function JoinForm({ title, onJoin }: { title: string | null; onJoin: (name: string) => void }) {
   const { me } = useSession();
-  // Suggest the account name; it can still be changed for this room.
-  const [value, setValue] = useState(() => loadName() || me.user?.name || '');
+  // Until the person types, suggest the remembered name or the account name. Derived on each
+  // render, so it fills in even when the session finishes loading after the form appears.
+  const [typed, setTyped] = useState<string | null>(null);
+  const value = typed ?? (loadName() || me.user?.name || '');
   const id = useId();
   const trimmed = value.trim();
 
@@ -89,7 +91,7 @@ function JoinForm({ title, onJoin }: { title: string | null; onJoin: (name: stri
         autoComplete="nickname"
         // The name is the only thing on this screen: let people type right away.
         autoFocus
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => setTyped(e.target.value)}
       />
       <button type="submit" disabled={!trimmed}>
         Join
@@ -106,6 +108,15 @@ interface RoomProps {
 
 function Room({ roomId, name, createSocket }: RoomProps) {
   const { state, solve, peers, setCell, setPresence } = useRoom(roomId, name, createSocket);
+
+  if (state.deleted) {
+    return (
+      <div role="alert">
+        <h2>This puzzle was deleted</h2>
+        <p>The person who created it deleted it, along with everyone&apos;s progress.</p>
+      </div>
+    );
+  }
 
   if (!state.puzzle) {
     return <p>{state.error ?? 'Joining the room…'}</p>;

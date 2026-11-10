@@ -4,7 +4,7 @@ import {
   applyEdit,
   buildPuzzleIndex,
   emptySolveState,
-  enterLetter,
+  enterEntry,
   getCell,
   type Selection,
   type SolveState,
@@ -17,7 +17,7 @@ const index = buildPuzzleIndex(diploCrostic37());
 function type(state: SolveState, start: Selection, word: string) {
   let result = { state, selection: start };
   for (const ch of word) {
-    const { edit, selection } = enterLetter(index, result.selection, letter(ch));
+    const { edit, selection } = enterEntry(index, result.selection, letter(ch));
     result = { state: applyEdit(result.state, edit), selection };
   }
   return result;
@@ -55,10 +55,7 @@ describe('two-way entry on the sample puzzle', () => {
       const first = clue.cells[0];
       const ch = firstLetters[i];
       if (first !== undefined && ch !== undefined) {
-        state = applyEdit(
-          state,
-          enterLetter(index, { cell: first, view: 'clue' }, letter(ch)).edit,
-        );
+        state = applyEdit(state, enterEntry(index, { cell: first, view: 'clue' }, letter(ch)).edit);
       }
     });
     expect(acrosticLetters(index, state).join('')).toBe(firstLetters);

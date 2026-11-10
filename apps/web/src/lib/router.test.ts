@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { navigate, parseRoute, useRoute } from './router';
+import { navigate, parseRoute, setSearchParam, useRoute, useSearchParam } from './router';
 
 const ROOM = 'AbCdEfGhIjKlMnOpQrSt_-';
 
@@ -32,5 +32,24 @@ describe('useRoute / navigate', () => {
       await new Promise((resolve) => window.addEventListener('popstate', resolve, { once: true }));
     });
     expect(result.current).toEqual({ kind: 'home' });
+  });
+});
+
+describe('useSearchParam / setSearchParam', () => {
+  afterEach(() => window.history.pushState(null, '', '/'));
+
+  it('reads and updates one parameter, keeping the path and other parameters', () => {
+    window.history.pushState(null, '', '/r/AbCdEfGhIjKlMnOpQrSt_-?keep=1');
+    const { result } = renderHook(() => useSearchParam('panel'));
+    expect(result.current).toBeNull();
+
+    act(() => setSearchParam('panel', 'my'));
+    expect(result.current).toBe('my');
+    expect(window.location.pathname).toBe('/r/AbCdEfGhIjKlMnOpQrSt_-');
+    expect(new URLSearchParams(window.location.search).get('keep')).toBe('1');
+
+    act(() => setSearchParam('panel', null));
+    expect(result.current).toBeNull();
+    expect(window.location.search).toBe('?keep=1');
   });
 });

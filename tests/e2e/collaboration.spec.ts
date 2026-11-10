@@ -18,12 +18,12 @@ test('two people solve the same puzzle together', async ({ browser }) => {
 
   // Ada types clue A; Bo sees it in his grid.
   await blank(ada, 138).click();
-  await ada.keyboard.type('desdemona');
+  await ada.keyboard.type('DESDEMONA');
   await expect(bo.getByRole('gridcell', { name: 'Square 5, clue A, E' })).toBeVisible();
 
   // Bo types in his grid; Ada sees it in her clue list.
   await square(bo, 1).click();
-  await bo.keyboard.type('m');
+  await bo.keyboard.type('M');
   await expect(
     ada.getByRole('gridcell', { name: 'Clue O, letter 3 of 7, square 1, M' }),
   ).toBeVisible();
@@ -39,7 +39,7 @@ test('two people solve the same puzzle together', async ({ browser }) => {
 test('letters are still there after reloading', async ({ page }) => {
   await startSampleRoom(page);
   await blank(page, 138).click();
-  await page.keyboard.type('des');
+  await page.keyboard.type('DES');
   await expect(page.getByRole('gridcell', { name: 'Square 44, clue A, S' })).toBeVisible();
 
   await page.reload();

@@ -1,4 +1,4 @@
-import type { Letter } from '@acrosticle/core';
+import type { Entry } from '@acrosticle/core';
 import type { ServerMessage } from '@acrosticle/protocol';
 import { describe, expect, it } from 'vitest';
 import {
@@ -9,7 +9,7 @@ import {
   type RoomState,
 } from './roomState';
 
-const L = (s: string) => s as Letter;
+const L = (s: string) => s as Entry;
 const puzzleFile = {
   grid: { columns: 2, rows: ['1A 2A'] },
   clues: [{ label: 'A', text: 'x', cells: [1, 2] }],

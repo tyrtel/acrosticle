@@ -3,7 +3,7 @@ import { letter, makePuzzle, tinyPuzzle } from '../tests/support/puzzles';
 import {
   acrosticLetters,
   describeSelection,
-  enterLetter,
+  enterEntry,
   erase,
   jumpToClue,
   moveInGrid,
@@ -96,13 +96,13 @@ describe('jumpToClue', () => {
   });
 });
 
-describe('enterLetter', () => {
+describe('enterEntry', () => {
   it('fills the cell and advances within the active view', () => {
-    const fromGrid = enterLetter(index, inGrid(1), letter('Q'));
+    const fromGrid = enterEntry(index, inGrid(1), letter('Q'));
     expect(fromGrid.edit).toEqual({ cell: 1, value: 'Q' });
     expect(fromGrid.selection).toEqual(inGrid(2));
 
-    const fromClue = enterLetter(index, inClue(1), letter('Q'));
+    const fromClue = enterEntry(index, inClue(1), letter('Q'));
     expect(fromClue.selection).toEqual(inClue(5));
   });
 });

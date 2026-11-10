@@ -5,7 +5,7 @@ import {
   setCell,
   type CellEdit,
   type CellNumber,
-  type Letter,
+  type Entry,
   type Puzzle,
   type SolveState,
 } from '@acrosticle/core';
@@ -15,7 +15,7 @@ import type { ConnectionStatus } from './RoomConnection';
 
 /** An edit applied locally but not yet confirmed by the room. */
 export interface PendingEdit {
-  readonly value: Letter | null;
+  readonly value: Entry | null;
   readonly clientSeq: number;
 }
 
@@ -32,6 +32,8 @@ export interface RoomState {
   /** Where other members' cursors are. */
   readonly presence: ReadonlyMap<string, CellNumber>;
   readonly error: string | null;
+  /** The creator deleted the room while we were in it. */
+  readonly deleted: boolean;
 }
 
 export type RoomEvent =
@@ -49,6 +51,7 @@ export const initialRoomState: RoomState = {
   members: [],
   presence: new Map(),
   error: null,
+  deleted: false,
 };
 
 /**
@@ -123,6 +126,8 @@ function applyServerMessage(state: RoomState, message: ServerMessage): RoomState
       return { ...state, error: message.message };
     case 'pong':
       return state;
+    case 'room/deleted':
+      return { ...state, deleted: true };
   }
 }
 

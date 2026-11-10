@@ -7,7 +7,7 @@ import {
   extendSession,
   EXTEND_BELOW_MS,
   findSession,
-  listRoomsCreatedBy,
+  listMyRooms,
   SESSION_TTL_MS,
   upsertGoogleUser,
 } from './db';
@@ -136,7 +136,7 @@ export async function myRooms(request: Request, env: Env): Promise<Response> {
   const token = readCookie(request, SESSION_COOKIE);
   const session = token ? await findSession(env.DB, token, Date.now()) : null;
   if (!session) return Response.json({ error: 'Sign in to see your puzzles.' }, { status: 401 });
-  const body: MyRoomsResponse = { rooms: await listRoomsCreatedBy(env.DB, session.account.id) };
+  const body: MyRoomsResponse = { rooms: await listMyRooms(env.DB, session.account.id) };
   return Response.json(body, { headers: { 'Cache-Control': 'no-store' } });
 }
 

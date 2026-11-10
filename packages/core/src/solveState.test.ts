@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeLetter, type Letter } from './letters';
+import { normalizeEntry, type Entry } from './entries';
 import { applyEdit, emptySolveState, filledCount, getCell, setCell } from './solveState';
 
-const L = (s: string): Letter => {
-  const letter = normalizeLetter(s);
+const L = (s: string): Entry => {
+  const letter = normalizeEntry(s);
   if (!letter) throw new Error(`bad test letter ${s}`);
   return letter;
 };

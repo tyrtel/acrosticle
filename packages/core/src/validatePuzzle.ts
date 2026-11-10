@@ -1,4 +1,4 @@
-import { clueLabel } from './letters';
+import { clueLabel } from './clueLabel';
 import type { CellNumber, ClueLabel, Puzzle } from './puzzle';
 
 export type IssueSeverity = 'error' | 'warning' | 'info';
