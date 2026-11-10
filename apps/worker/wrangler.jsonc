@@ -28,8 +28,7 @@
   // it's a secret so the emails stay out of the public repo.
   "secrets": { "required": ["GOOGLE_CLIENT_SECRET", "CREATOR_ALLOWLIST"] },
 
-  // Accounts, sessions and the room list. Replace database_id with the id printed by
-  // `wrangler d1 create acrosticle` before the first deploy (see docs/setup/google-sign-in.md).
+  // Accounts, sessions and the room list (production database, created with `wrangler d1 create`).
   "d1_databases": [
     {
       "binding": "DB",
