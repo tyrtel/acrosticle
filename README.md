@@ -45,6 +45,12 @@ works, and Wrangler warns about the missing secrets.
 
 `npm run dev` applies the local database migrations (Cloudflare D1) before starting the Worker.
 
+### Image parsing (optional locally)
+
+"Upload a puzzle image" needs an Anthropic API key and costs money per image. See
+[`docs/setup/claude-api.md`](docs/setup/claude-api.md): in short, `npm run setup:claude`, restart
+`npm run dev`, and `npm run doctor:claude` to check.
+
 ### Google sign-in (optional locally)
 
 Without sign-in configured, everything works except creating rooms for imported puzzles. To enable it,
@@ -67,6 +73,9 @@ restart `npm run dev`, then `npm run doctor:signin` to check.
 | `npm run format`           | Format with Prettier                                         |
 | `npm run setup:signin`     | Write local Google sign-in secrets (`apps/worker/.dev.vars`) |
 | `npm run doctor:signin`    | Check the local sign-in setup                                |
+| `npm run setup:claude`     | Write the local Anthropic API key (`apps/worker/.dev.vars`)  |
+| `npm run doctor:claude`    | Check the local image-parsing setup (no API call)            |
+| `npm run eval:parse`       | Measure parser accuracy and cost (real API; needs `--yes`)   |
 | `npm run check`            | Everything CI runs (typecheck, lint, format, test)           |
 
 The first time you run end-to-end tests, install a browser: `npx playwright install chromium`. The

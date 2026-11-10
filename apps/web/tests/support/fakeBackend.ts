@@ -23,6 +23,15 @@ export class FakeBackend {
   me: MeResponse = { user: null, canCreate: false, signInConfigured: true };
   /** Delay /api/me answers, to test the session arriving after other data. */
   meDelayMs = 0;
+  /** What /api/puzzles/parse answers (status 200 = the body is a ParsePuzzleResponse). */
+  parseReply: { status: number; body: unknown } = {
+    status: 503,
+    body: { error: "Image parsing isn't set up on this server." },
+  };
+  /** How long parsing takes; the request can be cancelled meanwhile. */
+  parseDelayMs = 0;
+  /** Images uploaded for parsing. */
+  readonly parsedImages: Blob[] = [];
   /** Make the next room creation fail with this response. */
   failNextCreate: { status: number; error: string } | null = null;
   private created = 0;
@@ -79,6 +88,21 @@ export class FakeBackend {
       if (!this.me.user) return json(401, { error: 'Sign in to see your puzzles.' });
       const rooms = [...this.myRooms].sort((a, b) => b.updatedAt - a.updatedAt);
       return json(200, { rooms });
+    }
+    if (url === '/api/puzzles/parse' && init?.method === 'POST') {
+      const image = (init.body as FormData).get('image');
+      if (image instanceof Blob) this.parsedImages.push(image);
+      const { status, body } = this.parseReply;
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(
+          () => resolve(new Response(JSON.stringify(body), { status })),
+          this.parseDelayMs,
+        );
+        init.signal?.addEventListener('abort', () => {
+          clearTimeout(timer);
+          reject(new DOMException('Aborted', 'AbortError'));
+        });
+      });
     }
     if (url === '/api/auth/logout' && init?.method === 'POST') {
       this.me = { user: null, canCreate: false, signInConfigured: this.me.signInConfigured };

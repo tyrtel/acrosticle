@@ -20,6 +20,8 @@ import { SquareEditor } from './SquareEditor';
 
 export interface ReviewPuzzleProps {
   readonly initialPuzzle: Puzzle;
+  /** Notes from reading an image (what Claude was unsure about), shown above the problems. */
+  readonly notes?: readonly string[];
   readonly onStart: (puzzle: Puzzle) => void;
 }
 
@@ -30,7 +32,7 @@ const SEVERITY_RANK: Record<IssueSeverity, number> = { error: 3, warning: 2, inf
  * highlighted, squares and clues can be edited, and solving is blocked
  * until there are no errors.
  */
-export function ReviewPuzzle({ initialPuzzle, onStart }: ReviewPuzzleProps) {
+export function ReviewPuzzle({ initialPuzzle, notes = [], onStart }: ReviewPuzzleProps) {
   const [puzzle, setPuzzle] = useState(initialPuzzle);
   const [selected, setSelected] = useState<number | null>(null);
   const issues = useMemo(() => validatePuzzle(puzzle), [puzzle]);
@@ -121,6 +123,16 @@ export function ReviewPuzzle({ initialPuzzle, onStart }: ReviewPuzzleProps) {
           )}
         </div>
         <div className={styles.sidePane}>
+          {notes.length > 0 && (
+            <section aria-label="Notes from reading the image">
+              <h3>Notes from reading the image</h3>
+              <ul className={styles.notes}>
+                {notes.map((note, i) => (
+                  <li key={i}>{note}</li>
+                ))}
+              </ul>
+            </section>
+          )}
           <IssueList issues={issues} onFix={onFix} onShow={setSelected} />
           <h3>Clues</h3>
           {puzzle.clues.map((clue) => (

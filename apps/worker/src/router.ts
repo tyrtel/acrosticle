@@ -12,6 +12,7 @@ import { appOrigin, canCreate, getCurrentUser } from './auth';
 import { finishGoogleSignIn, logout, me, myRooms, startGoogleSignIn } from './authRoutes';
 import { deleteRoomRecords, recordRoom, recordVisit, roomCreator } from './db';
 import { ROOM_ID_HEADER } from './room/PuzzleRoom';
+import { parsePuzzle } from './parsing';
 import { newRoomId } from './roomId';
 import { SAMPLE_PUZZLES } from './samples';
 
@@ -52,6 +53,8 @@ export async function route(
       return me(request, env);
     case 'GET /api/me/rooms':
       return myRooms(request, env);
+    case 'POST /api/puzzles/parse':
+      return parsePuzzle(request, env);
   }
 
   const roomMatch = ROOM_PATH.exec(url.pathname);

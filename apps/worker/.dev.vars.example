@@ -4,3 +4,5 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 # Your email, so you can create rooms for imported puzzles locally.
 CREATOR_ALLOWLIST=you@example.com
+# Anthropic API key for image parsing (optional; see docs/setup/claude-api.md). Costs money per image.
+ANTHROPIC_API_KEY=

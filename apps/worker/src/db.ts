@@ -207,3 +207,57 @@ export async function deleteRoomRecords(db: D1Database, roomId: string): Promise
     db.prepare('DELETE FROM rooms WHERE room_id = ?').bind(roomId),
   ]);
 }
+
+/** One image parse, for limits and cost review. */
+export interface ParseRun {
+  readonly userId: string;
+  readonly createdAt: number;
+  readonly outcome: string;
+  readonly model: string | null;
+  readonly inputTokens: number;
+  readonly outputTokens: number;
+  readonly costUsd: number;
+  readonly durationMs: number | null;
+}
+
+export async function recordParseRun(db: D1Database, run: ParseRun): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO parse_runs
+         (user_id, created_at, outcome, model, input_tokens, output_tokens, cost_usd, duration_ms)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(
+      run.userId,
+      run.createdAt,
+      run.outcome,
+      run.model,
+      run.inputTokens,
+      run.outputTokens,
+      run.costUsd,
+      run.durationMs,
+    )
+    .run();
+}
+
+/** How many parses a user started since a time. */
+export async function countParsesSince(
+  db: D1Database,
+  userId: string,
+  since: number,
+): Promise<number> {
+  const row = await db
+    .prepare('SELECT COUNT(*) AS n FROM parse_runs WHERE user_id = ? AND created_at >= ?')
+    .bind(userId, since)
+    .first<{ n: number }>();
+  return row?.n ?? 0;
+}
+
+/** Total parse spending (everyone) since a time, in US dollars. */
+export async function parseSpendSince(db: D1Database, since: number): Promise<number> {
+  const row = await db
+    .prepare('SELECT COALESCE(SUM(cost_usd), 0) AS total FROM parse_runs WHERE created_at >= ?')
+    .bind(since)
+    .first<{ total: number }>();
+  return row?.total ?? 0;
+}

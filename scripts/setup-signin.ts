@@ -10,8 +10,6 @@
 import { existsSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
-import { stdin, stdout } from 'node:process';
-import { createInterface } from 'node:readline/promises';
 import {
   checkClientId,
   checkClientSecret,
@@ -22,57 +20,12 @@ import {
   readClientJson,
   updateDevVars,
 } from './lib/signinConfig.ts';
+import { ask, askHidden } from './lib/prompt.ts';
 
 const ROOT = resolve(import.meta.dirname, '..');
 // ACROSTICLE_DEV_VARS lets tests point at a scratch file instead of your real one.
 const DEV_VARS = process.env.ACROSTICLE_DEV_VARS ?? resolve(ROOT, 'apps/worker/.dev.vars');
 const EXAMPLE = resolve(ROOT, 'apps/worker/.dev.vars.example');
-
-async function ask(question: string, fallback = ''): Promise<string> {
-  const hint = fallback ? ` [${fallback}]` : '';
-  const rl = createInterface({ input: stdin, output: stdout });
-  try {
-    const answer = (await rl.question(`${question}${hint}: `)).trim();
-    return answer || fallback;
-  } finally {
-    rl.close();
-  }
-}
-
-/**
- * Reads a line without showing it (for the client secret), handling
- * Backspace, Enter, Ctrl+C and pasted text. Falls back to a plain read when
- * input isn't a terminal (e.g. piped), where hiding isn't possible.
- */
-async function askHidden(question: string): Promise<string> {
-  if (!stdin.isTTY) return ask(question);
-  stdout.write(`${question}: `);
-  stdin.setRawMode(true);
-  stdin.resume();
-  return new Promise((resolvePromise) => {
-    let value = '';
-    const finish = () => {
-      stdin.off('data', onData);
-      stdin.setRawMode(false);
-      stdin.pause();
-      stdout.write('\n');
-      resolvePromise(value.trim());
-    };
-    const onData = (chunk: Buffer) => {
-      for (const ch of chunk.toString('utf8')) {
-        if (ch === '\r' || ch === '\n') return finish();
-        if (ch === '\u0003') {
-          stdin.setRawMode(false);
-          stdout.write('\n');
-          process.exit(130);
-        }
-        if (ch === '\u007f' || ch === '\b') value = value.slice(0, -1);
-        else if (ch >= ' ') value += ch;
-      }
-    };
-    stdin.on('data', onData);
-  });
-}
 
 function fail(message: string): never {
   console.error(`\n✖ ${message}`);

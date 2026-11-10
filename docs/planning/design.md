@@ -175,6 +175,15 @@ Cursor behaviour (pure functions in core, so they can be unit tested):
 
 ## 6. Image parsing pipeline
 
+> **Status (2026-11-10): built (M5).** Implemented as described below, with these differences:
+> the response uses the compact puzzle-file shape (grid rows as strings) instead of one object per
+> square, to cut output tokens; model and effort are Worker settings (`PARSE_MODEL`, `PARSE_EFFORT`;
+> defaults Opus 5.5 / high) to be chosen after the cost review; refusal fallbacks are sent only to
+> models that accept them; the repair pass (§6.3) is not built. Spending limits: 10 parses per person
+> per hour and `PARSE_DAILY_BUDGET_USD` per UTC day (default $5), all runs logged in `parse_runs`.
+> See [ADR 0004](../adr/0004-image-parsing.md) and [setup](../setup/claude-api.md). The cost review
+> (`npm run eval:parse`, $4 total budget, cheapest model first) is pending the owner's go-ahead.
+
 ### 6.1 Flow
 
 ```
@@ -489,7 +498,7 @@ every commit.
 | M2 ✅ | Single-player solver | Grid and clue UI, keyboard play, JSON import / manual entry editor with validation.                               |
 | M3 ✅ | Real-time rooms      | Room creation, persistence, snapshot and updates, presence, reconnects, shareable links.                          |
 | M4 ✅ | Accounts             | Google sign-in (design discussion first), sessions, sign-in required to create rooms.                             |
-| M5    | Image parsing        | Parse endpoint, Claude integration, review screen, parser eval, then a cost review together.                      |
+| M5 ✅ | Image parsing        | Parse endpoint, Claude integration, review screen, parser eval, then a cost review together.                      |
 | M6    | Polish               | Mobile input, accessibility pass, rate limits and spend cap, deploy.                                              |
 | —     | Stretch              | Phone-photo capture (§6.8).                                                                                       |
 

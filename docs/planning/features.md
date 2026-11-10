@@ -87,10 +87,16 @@ like Japanese or Chinese, and phone on-screen keyboards. Physical keys that prod
 directly (including é on keyboards that have it) work. The fix is the planned mobile keyboard work: a
 hidden input that receives text input events.
 
+## Image parsing (M5)
+
+Built 2026-11-10 (see design.md §6 and ADR 0004). **Cost review done** (2026-11-10, $0.016 of the $4
+test budget): Claude Haiku 5.5 at medium effort, about $0.004 per image, 99%+ accurate on the sample with
+every remaining error flagged and fixable in one click. Details in [parse-eval.md](parse-eval.md).
+
 ## Also queued
 
 - **Tell same-titled puzzles apart** in My puzzles (e.g. show when each was created, or a short id):
   rooms made from the same puzzle currently look identical in the list.
 
-- **Rate limiting** anonymous sample-room creation (with the M5 spending limits).
+- **Rate limiting** anonymous sample-room creation (still queued: M5 added limits for image parsing only).
 - **Automatic deploys from GitHub**: maybe later. Deploys stay manual (`npm run deploy`) for now.

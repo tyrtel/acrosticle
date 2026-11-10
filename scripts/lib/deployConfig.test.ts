@@ -15,6 +15,16 @@ describe('deploySecrets', () => {
     });
   });
 
+  it('includes the optional Anthropic key only when present', () => {
+    const text = 'GOOGLE_CLIENT_SECRET=shh\nCREATOR_ALLOWLIST=a@b.co\nANTHROPIC_API_KEY=sk-ant-x\n';
+    expect(deploySecrets(text).secrets).toEqual({
+      GOOGLE_CLIENT_SECRET: 'shh',
+      CREATOR_ALLOWLIST: 'a@b.co',
+      ANTHROPIC_API_KEY: 'sk-ant-x',
+    });
+    expect(deploySecrets('ANTHROPIC_API_KEY=\n').secrets).toEqual({});
+  });
+
   it('reports missing or empty secrets', () => {
     expect(deploySecrets('GOOGLE_CLIENT_SECRET=\n').missing).toEqual([
       'GOOGLE_CLIENT_SECRET',

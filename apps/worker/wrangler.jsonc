@@ -22,6 +22,14 @@
     // OAuth client id from Google Cloud (public, not a secret). Empty = sign-in disabled.
     // Public OAuth client id (not a secret). The client secret is a Cloudflare secret.
     "GOOGLE_CLIENT_ID": "767819622752-ps8a60je9mi6up825r0gngp81jgv84cf.apps.googleusercontent.com",
+    // Most image parsing may cost per UTC day, across everyone (US dollars).
+    "PARSE_DAILY_BUDGET_USD": "5",
+    // Which Claude model and effort read images (claude-haiku-5-5 | claude-sonnet-5-5 |
+    // claude-opus-5-5; low | medium | high). Change after the cost review; no code change needed.
+    // Chosen in the 2026-11-10 cost review (docs/planning/parse-eval.md): 99%+ accurate on the
+    // sample at about $0.004 per image; everything else is caught by validation.
+    "PARSE_MODEL": "claude-haiku-5-5",
+    "PARSE_EFFORT": "medium",
   },
   // Secrets: never in this file. Set with `wrangler secret put NAME` (locally: apps/worker/.dev.vars).
   // CREATOR_ALLOWLIST is comma-separated emails allowed to create rooms for their own puzzles;

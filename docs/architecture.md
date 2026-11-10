@@ -34,6 +34,7 @@
 | `POST /api/rooms`               | Create a room: `{ sample: "diplo-crostic-37" }` (anyone) or `{ puzzle }` (signed-in, allowlisted; validated). Returns `{ roomId }` |
 | `GET /api/rooms/:id`            | Check a room exists before joining; `{ roomId, title }` or 404                                                                     |
 | `DELETE /api/rooms/:id`         | Delete a room for everyone (its creator only); members get `room/deleted`                                                          |
+| `POST /api/puzzles/parse`       | Read an uploaded image into a draft puzzle with Claude (allowlisted creators; per-person and daily limits)                         |
 | `GET /api/rooms/:id/ws`         | WebSocket upgrade into the room                                                                                                    |
 | `GET /api/auth/google`          | Start Google sign-in (`?returnTo=/path`)                                                                                           |
 | `GET /api/auth/google/callback` | Google returns here; sets the session cookie                                                                                       |

@@ -56,6 +56,7 @@ apps/
 packages/
   core/                Pure domain logic: puzzle model, solve state, validation. NO I/O, React or Cloudflare.
   protocol/            Client <-> server message schemas and parse/encode helpers
+  parser/              Reads puzzle images with Claude (shared by the Worker and the eval script)
 tests/
   e2e/                 Playwright tests against the full running app
   fixtures/            Shared test-only data

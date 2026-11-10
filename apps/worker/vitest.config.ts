@@ -17,6 +17,7 @@ export default defineProject({
           GOOGLE_CLIENT_ID: 'test-client-id',
           GOOGLE_CLIENT_SECRET: 'test-client-secret',
           CREATOR_ALLOWLIST: ' Ada@Example.com , bo@example.com',
+          ANTHROPIC_API_KEY: 'test-anthropic-key',
           TEST_MIGRATIONS: migrations,
         },
       },

@@ -6,6 +6,7 @@ dist/
 *.tsbuildinfo
 
 # Test output
+eval-results/
 coverage/
 playwright-report/
 test-results/

@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/App';
 import { FakeBackend } from '../support/fakeBackend';
 import { samplePuzzleFileAsPrinted } from '../support/samples';
@@ -67,5 +67,41 @@ describe('importing, fixing and solving a puzzle', () => {
     await user.click(link);
     expect(window.location.search).toBe('');
     expect(panel).not.toHaveAttribute('open');
+  });
+
+  it('reads an uploaded image, shows notes, and starts a room from the reviewed draft', async () => {
+    backend.signIn();
+    backend.parseReply = {
+      status: 200,
+      body: {
+        file: samplePuzzleFileAsPrinted(),
+        notes: ['Square 193 looked like 193Y.'],
+        issues: [],
+        needsFixes: true,
+        costUsd: 0.4,
+      },
+    };
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: 'Upload a puzzle image' }));
+    // jsdom can't decode images, so skip the real downscale: upload a tiny PNG as-is.
+    vi.stubGlobal('createImageBitmap', () =>
+      Promise.resolve({ width: 10, height: 10, close: () => {} }),
+    );
+    await user.upload(
+      screen.getByLabelText('Choose an image'),
+      new File([new Uint8Array(10)], 'puzzle.png', { type: 'image/png' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Read the puzzle' }));
+
+    expect(await screen.findByRole('heading', { name: 'Review the puzzle' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Notes from reading the image' })).toHaveTextContent(
+      'Square 193 looked like 193Y.',
+    );
+    await user.click(screen.getByRole('button', { name: 'Fix' }));
+    await user.click(screen.getByRole('button', { name: 'Start solving' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Diplo-Crostic No. 37' }),
+    ).toBeInTheDocument();
   });
 });

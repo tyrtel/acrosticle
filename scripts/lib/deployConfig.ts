@@ -4,6 +4,9 @@ import { parseDevVars } from './signinConfig.ts';
 /** Secrets the production Worker needs, uploaded at deploy time. */
 export const DEPLOY_SECRETS = ['GOOGLE_CLIENT_SECRET', 'CREATOR_ALLOWLIST'] as const;
 
+/** Secrets uploaded only when present (image parsing works without the key, answering 503). */
+export const OPTIONAL_DEPLOY_SECRETS = ['ANTHROPIC_API_KEY'] as const;
+
 export const PLACEHOLDER_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
 
 /** Picks the deploy secrets out of a .dev.vars file, reporting any that are missing or empty. */
@@ -18,6 +21,10 @@ export function deploySecrets(devVarsText: string): {
     const value = vars.get(key);
     if (value) secrets[key] = value;
     else missing.push(key);
+  }
+  for (const key of OPTIONAL_DEPLOY_SECRETS) {
+    const value = vars.get(key);
+    if (value) secrets[key] = value;
   }
   return { secrets, missing };
 }

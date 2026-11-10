@@ -4,10 +4,11 @@ import { expect, test } from '@playwright/test';
 // cover the signed-out experience; the sign-in flow itself is tested in the
 // worker's integration tests with Google mocked.
 
-test('importing needs sign-in, and says so', async ({ page }) => {
+test('uploading and importing need sign-in, and say so', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Upload a puzzle image' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Import a puzzle file' })).toBeDisabled();
-  await expect(page.getByText('Sign in to import your own puzzles.')).toBeVisible();
+  await expect(page.getByText(/Sign in to add your own puzzles/)).toBeVisible();
   await expect(page.getByText("Sign-in isn't set up on this server yet.").first()).toBeVisible();
 });
 

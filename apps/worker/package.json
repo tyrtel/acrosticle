@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@acrosticle/core": "0.0.0",
+    "@acrosticle/parser": "0.0.0",
     "@acrosticle/protocol": "0.0.0"
   },
   "devDependencies": {

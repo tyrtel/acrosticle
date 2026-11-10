@@ -10,7 +10,7 @@ import {
   SignInNotice,
   useSession,
 } from './features/account';
-import { ImportPuzzle, ReviewPuzzle } from './features/editor';
+import { ImportPuzzle, ReviewPuzzle, UploadImage } from './features/editor';
 import { createRoom, createSampleRoom, RoomPage } from './features/room';
 import type { ApiResult } from './lib/api';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -81,7 +81,8 @@ function Shell() {
 type HomeScreen =
   | { readonly kind: 'start' }
   | { readonly kind: 'import' }
-  | { readonly kind: 'review'; readonly puzzle: Puzzle };
+  | { readonly kind: 'upload' }
+  | { readonly kind: 'review'; readonly puzzle: Puzzle; readonly notes?: readonly string[] };
 
 /** Start page: open the sample, or import and review a puzzle, then create a room for it. */
 function Home() {
@@ -129,6 +130,14 @@ function Home() {
               type="button"
               disabled={!me.canCreate}
               aria-describedby={me.canCreate ? undefined : 'import-note'}
+              onClick={() => setScreen({ kind: 'upload' })}
+            >
+              Upload a puzzle image
+            </button>{' '}
+            <button
+              type="button"
+              disabled={!me.canCreate}
+              aria-describedby={me.canCreate ? undefined : 'import-note'}
               onClick={() => setScreen({ kind: 'import' })}
             >
               Import a puzzle file
@@ -140,9 +149,15 @@ function Home() {
       {screen.kind === 'import' && (
         <ImportPuzzle onImport={(puzzle) => setScreen({ kind: 'review', puzzle })} />
       )}
+      {screen.kind === 'upload' && (
+        <UploadImage
+          onParsed={({ puzzle, notes }) => setScreen({ kind: 'review', puzzle, notes })}
+        />
+      )}
       {screen.kind === 'review' && (
         <ReviewPuzzle
           initialPuzzle={screen.puzzle}
+          notes={screen.notes}
           onStart={(puzzle) => void startRoom(() => createRoom(puzzle))}
         />
       )}
@@ -164,7 +179,7 @@ function ImportNote() {
   }
   return (
     <div id="import-note" className="note">
-      <p>Sign in to import your own puzzles. The sample needs no account.</p>
+      <p>Sign in to add your own puzzles (from an image or a file). The sample needs no account.</p>
       <SignInButton />
     </div>
   );
