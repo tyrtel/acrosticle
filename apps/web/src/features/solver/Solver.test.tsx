@@ -4,9 +4,10 @@ import {
   parseCompactGrid,
   type CellEdit,
   type CellNumber,
+  type Entry,
   type Puzzle,
 } from '@acrosticle/core';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -67,6 +68,7 @@ function setup(props: Parameters<typeof LocalSolver>[0] = {}) {
     user,
     grid: screen.getByRole('grid', { name: 'Quotation grid' }),
     clues: screen.getByRole('grid', { name: 'Clues' }),
+    entry: screen.getByRole('textbox', { name: 'Answer entry' }),
   };
 }
 
@@ -81,9 +83,10 @@ describe('Solver', () => {
   });
 
   it('starts with the first grid square selected', () => {
-    const { grid } = setup();
+    const { grid, entry } = setup();
     expect(square(1)).toHaveAttribute('aria-selected', 'true');
-    expect(grid).toHaveAttribute('aria-activedescendant', square(1).id);
+    expect(entry).toHaveAccessibleDescription('Square 1, clue A letter 2 of 3, empty');
+    expect(grid.className).not.toMatch(/focused/);
   });
 
   it('typing in the grid fills the matching clue blanks', async () => {
@@ -99,14 +102,15 @@ describe('Solver', () => {
   });
 
   it('typing in a clue fills the matching grid squares, in answer order', async () => {
-    const { user, clues } = setup();
+    const { user, clues, entry } = setup();
     await user.click(blank(3));
     await user.keyboard('ABC');
 
     expect(square(3)).toHaveAccessibleName('Square 3, clue A, A');
     expect(square(1)).toHaveAccessibleName('Square 1, clue A, B');
     expect(square(5)).toHaveAccessibleName('Square 5, clue A, C');
-    expect(clues).toHaveFocus();
+    expect(entry).toHaveFocus();
+    expect(clues.className).toMatch(/focused/);
   });
 
   it('keeps what was typed: lowercase, digits, symbols and accents', async () => {
@@ -127,14 +131,136 @@ describe('Solver', () => {
   });
 
   it('Enter switches between the grid and the clues, keeping the square', async () => {
-    const { user, grid, clues } = setup();
+    const { user, grid, clues, entry } = setup();
     await user.click(square(2));
+    expect(grid.className).toMatch(/focused/);
     await user.keyboard('{Enter}');
-    expect(clues).toHaveFocus();
-    expect(clues).toHaveAttribute('aria-activedescendant', blank(2).id);
+    expect(clues.className).toMatch(/focused/);
+    expect(blank(2)).toHaveAttribute('aria-selected', 'true');
+    expect(entry).toHaveAccessibleDescription('Square 2, clue B letter 2 of 2, empty');
 
     await user.keyboard('{Enter}');
-    expect(grid).toHaveFocus();
+    expect(grid.className).toMatch(/focused/);
+    expect(entry).toHaveFocus();
+  });
+
+  describe('text that arrives without key presses (phone keyboards, IMEs)', () => {
+    const input = (entry: HTMLElement, inputType: string, data: string | null = null) =>
+      fireEvent(entry, new InputEvent('beforeinput', { inputType, data, cancelable: true }));
+
+    it('types inserted text, one square per character', async () => {
+      const { user, entry } = setup();
+      await user.click(square(1));
+      input(entry, 'insertText', 'Wé');
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, W');
+      expect(square(2)).toHaveAccessibleName('Square 2, clue B, é');
+      expect(square(3)).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('waits for an IME to finish composing, then types the result', async () => {
+      const { user, entry } = setup();
+      await user.click(square(1));
+      fireEvent(
+        entry,
+        new InputEvent('beforeinput', {
+          inputType: 'insertCompositionText',
+          data: 'n',
+          isComposing: true,
+        }),
+      );
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
+      fireEvent.compositionEnd(entry, { data: 'ね' });
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, ね');
+    });
+
+    it('erases on a phone Backspace (deleteContentBackward) and clears on Delete', async () => {
+      const { user, entry } = setup();
+      await user.click(square(1));
+      input(entry, 'insertText', 'XY');
+      input(entry, 'deleteContentBackward');
+      expect(square(2)).toHaveAccessibleName('Square 2, clue B, empty');
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, X');
+
+      await user.click(square(1));
+      input(entry, 'deleteContentForward');
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
+      expect(square(1)).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('focuses the entry when a square or blank is tapped, so phones open the keyboard', async () => {
+      const { user, entry } = setup();
+      expect(entry).not.toHaveFocus();
+      await user.click(square(4));
+      expect(entry).toHaveFocus();
+      entry.blur();
+      await user.click(blank(3));
+      expect(entry).toHaveFocus();
+    });
+  });
+
+  describe('undo and redo', () => {
+    it('undoes your edits with the button or Ctrl+Z, newest first, and redoes them', async () => {
+      const { user } = setup();
+      const undoButton = screen.getByRole('button', { name: /Undo/ });
+      const redoButton = screen.getByRole('button', { name: /Redo/ });
+      expect(undoButton).toBeDisabled();
+
+      await user.click(square(1));
+      await user.keyboard('XY');
+      expect(undoButton).toBeEnabled();
+
+      await user.keyboard('{Control>}z{/Control}');
+      expect(square(2)).toHaveAccessibleName('Square 2, clue B, empty');
+      expect(square(2)).toHaveAttribute('aria-selected', 'true'); // cursor follows the undo
+
+      await user.click(undoButton);
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
+      expect(undoButton).toBeDisabled();
+
+      await user.keyboard('{Control>}{Shift>}z{/Shift}{/Control}');
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, X');
+      await user.click(redoButton);
+      expect(square(2)).toHaveAccessibleName('Square 2, clue B, Y');
+      expect(redoButton).toBeDisabled();
+    });
+
+    it('keeps typing focus after clicking the buttons', async () => {
+      const { user, entry } = setup();
+      await user.click(square(1));
+      await user.keyboard('X');
+      await user.click(screen.getByRole('button', { name: /Undo/ }));
+      expect(entry).toHaveFocus();
+    });
+
+    it('restores what was there before, including a cleared square', async () => {
+      const { user } = setup();
+      await user.click(square(1));
+      await user.keyboard('X{ArrowLeft}{Delete}');
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
+      await user.keyboard('{Control>}z{/Control}');
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, X');
+    });
+
+    it('skips your edits that someone else has since changed', async () => {
+      const onEdit = vi.fn();
+      const user = userEvent.setup();
+      const { rerender } = render(
+        <Solver puzzle={puzzle} solve={emptySolveState} onEdit={onEdit} />,
+      );
+      await user.click(square(1));
+      await user.keyboard('A');
+      const mine = applyEdit(emptySolveState, { cell: 1, value: 'A' as Entry });
+      rerender(<Solver puzzle={puzzle} solve={mine} onEdit={onEdit} />);
+
+      // A collaborator overwrites square 1.
+      const theirs = applyEdit(mine, { cell: 1, value: 'Q' as Entry });
+      rerender(<Solver puzzle={puzzle} solve={theirs} onEdit={onEdit} />);
+      expect(screen.getByRole('button', { name: /Undo/ })).toBeDisabled();
+
+      onEdit.mockClear();
+      await user.keyboard('{Control>}z{/Control}');
+      expect(onEdit).not.toHaveBeenCalled();
+    });
   });
 
   it('Tab jumps to the next clue', async () => {
@@ -145,18 +271,18 @@ describe('Solver', () => {
   });
 
   it('Tab past the last clue leaves the solver instead of trapping focus', async () => {
-    const { user, clues } = setup();
+    const { user, entry } = setup();
     await user.click(blank(4));
     await user.keyboard('{Tab}');
-    expect(clues).not.toHaveFocus();
+    expect(entry).not.toHaveFocus();
     expect(blank(4)).toHaveAttribute('aria-selected', 'true');
   });
 
   it('Shift+Tab before the first clue leaves the solver too', async () => {
-    const { user, clues } = setup();
+    const { user, entry } = setup();
     await user.click(blank(3));
     await user.keyboard('{Shift>}{Tab}{/Shift}');
-    expect(clues).not.toHaveFocus();
+    expect(entry).not.toHaveFocus();
   });
 
   it('arrow keys move around the grid', async () => {

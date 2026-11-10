@@ -107,6 +107,17 @@ describe('RoomPage', () => {
     ]);
   });
 
+  it('sends undo and redo to the room like any other edit', async () => {
+    const user = await joinAs('Ada');
+    await user.click(square(1));
+    await user.keyboard('X');
+    expect(room.cells.get(1)).toBe('X');
+    await user.keyboard('{Control>}z{/Control}');
+    expect(room.cells.has(1)).toBe(false);
+    await user.keyboard('{Control>}y{/Control}');
+    expect(room.cells.get(1)).toBe('X');
+  });
+
   it("shows other solvers' letters and cursors", async () => {
     await joinAs('Ada');
     act(() => {

@@ -2,6 +2,7 @@ export * from './compactGrid';
 export * from './editing';
 export * from './clueLabel';
 export * from './entries';
+export * from './history';
 export * from './navigation';
 export * from './puzzle';
 export * from './puzzleIndex';

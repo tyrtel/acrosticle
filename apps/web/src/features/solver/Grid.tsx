@@ -1,6 +1,6 @@
 import type { CellNumber, GridSquare, PuzzleIndex, SolveState } from '@acrosticle/core';
 import { getCell } from '@acrosticle/core';
-import { useCallback, type KeyboardEventHandler, type Ref } from 'react';
+import { useCallback } from 'react';
 import { describePeers, type PeerMap } from '../../components/PeerTag';
 import { PuzzleGrid, type SquareView } from '../../components/PuzzleGrid';
 import { gridSquareId } from './elementIds';
@@ -12,13 +12,12 @@ export interface GridProps {
   readonly wordCells: readonly CellNumber[];
   readonly clueCells: readonly CellNumber[];
   readonly peers: PeerMap;
-  readonly active: boolean;
+  /** Typing goes to the grid: show a focus ring. */
+  readonly focused: boolean;
   readonly onSelect: (cell: CellNumber) => void;
-  readonly onKeyDown: KeyboardEventHandler;
-  readonly ref?: Ref<HTMLDivElement>;
 }
 
-/** The solver's quotation grid. Focus stays on the grid; the selected square is its active descendant. */
+/** The solver's quotation grid. Typing goes through the solver's hidden input. */
 export function Grid({
   index,
   solve,
@@ -26,10 +25,8 @@ export function Grid({
   wordCells,
   clueCells,
   peers,
-  active,
+  focused,
   onSelect,
-  onKeyDown,
-  ref,
 }: GridProps) {
   const inWord = new Set(wordCells);
   const inClue = new Set(clueCells);
@@ -68,14 +65,11 @@ export function Grid({
 
   return (
     <PuzzleGrid
-      ref={ref}
       grid={index.puzzle.grid}
       label="Quotation grid"
       viewSquare={viewSquare}
       onSquareClick={onSquareClick}
-      activeDescendant={active ? gridSquareId(selectedCell) : undefined}
-      onKeyDown={onKeyDown}
-      focusable
+      showFocus={focused}
     />
   );
 }

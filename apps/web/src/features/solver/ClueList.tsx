@@ -1,6 +1,6 @@
 import type { CellNumber, Clue, ClueLabel, PuzzleIndex, SolveState } from '@acrosticle/core';
 import { getCell } from '@acrosticle/core';
-import { memo, type CSSProperties, type KeyboardEventHandler, type Ref } from 'react';
+import { memo, type CSSProperties } from 'react';
 import { describePeers, PeerTag, type Peer, type PeerMap } from '../../components/PeerTag';
 import { clueBlankId } from './elementIds';
 import styles from './ClueList.module.css';
@@ -11,33 +11,26 @@ export interface ClueListProps {
   readonly selectedCell: CellNumber;
   readonly selectedClue: ClueLabel;
   readonly peers: PeerMap;
-  readonly active: boolean;
+  /** Typing goes to the clues: show a focus ring. */
+  readonly focused: boolean;
   readonly onSelect: (cell: CellNumber) => void;
-  readonly onKeyDown: KeyboardEventHandler;
-  readonly ref?: Ref<HTMLDivElement>;
 }
 
-/** The clues, each with its numbered answer blanks. Focus works like the grid's. */
+/** The clues, each with its numbered answer blanks. */
 export function ClueList({
   index,
   solve,
   selectedCell,
   selectedClue,
   peers,
-  active,
+  focused,
   onSelect,
-  onKeyDown,
-  ref,
 }: ClueListProps) {
   return (
     <div
-      ref={ref}
       role="grid"
       aria-label="Clues"
-      aria-activedescendant={active ? clueBlankId(selectedCell) : undefined}
-      tabIndex={0}
-      className={styles.list}
-      onKeyDown={onKeyDown}
+      className={focused ? `${styles.list} ${styles.focused}` : styles.list}
     >
       {index.clues.map((clue) => (
         <ClueRow

@@ -23,16 +23,10 @@ test('the theme button switches colors and is remembered', async ({ page }) => {
 test('cells keep exactly what is typed, including lowercase and symbols', async ({ page }) => {
   await startSampleRoom(page);
   await blank(page, 138).click();
-  // A key event for each character, like a keyboard that has an é key. Playwright's keyboard is
-  // US English, so é is sent as a raw key event. (Text typed in without key events, from dead
-  // keys, IMEs and phone keyboards, is handled in M6: see features.md.)
-  const pressKey = (key: string) =>
-    page.evaluate((k) => {
-      document.activeElement?.dispatchEvent(
-        new KeyboardEvent('keydown', { key: k, bubbles: true }),
-      );
-    }, key);
-  for (const key of ['d', 'é', '7', '?']) await pressKey(key);
+  await page.keyboard.type('d');
+  // é as phone keyboards, dead keys and IMEs send it: inserted text with no key press.
+  await page.keyboard.insertText('é');
+  await page.keyboard.type('7?');
   await expect(square(page, 138)).toHaveAccessibleName(/, d$/);
   await expect(square(page, 5)).toHaveAccessibleName(/, é$/);
   await expect(square(page, 44)).toHaveAccessibleName(/, 7$/);

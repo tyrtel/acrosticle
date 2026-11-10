@@ -1,5 +1,5 @@
 import type { Grid, GridSquare } from '@acrosticle/core';
-import { memo, type CSSProperties, type KeyboardEventHandler, type Ref } from 'react';
+import { memo, type CSSProperties } from 'react';
 import { PeerTag, type Peer } from '../PeerTag';
 import styles from './PuzzleGrid.module.css';
 
@@ -22,10 +22,8 @@ export interface PuzzleGridProps {
   /** Called for every square on each render; keep it cheap. */
   readonly viewSquare: (square: GridSquare, gridIndex: number) => SquareView;
   readonly onSquareClick?: ((gridIndex: number) => void) | undefined;
-  readonly activeDescendant?: string | undefined;
-  readonly onKeyDown?: KeyboardEventHandler | undefined;
-  readonly focusable?: boolean | undefined;
-  readonly ref?: Ref<HTMLDivElement> | undefined;
+  /** Draw a focus ring (typing goes to this grid). */
+  readonly showFocus?: boolean | undefined;
 }
 
 /**
@@ -38,10 +36,7 @@ export function PuzzleGrid({
   label,
   viewSquare,
   onSquareClick,
-  activeDescendant,
-  onKeyDown,
-  focusable = false,
-  ref,
+  showFocus = false,
 }: PuzzleGridProps) {
   const rows: { square: GridSquare; gridIndex: number }[][] = [];
   grid.squares.forEach((square, gridIndex) => {
@@ -51,14 +46,10 @@ export function PuzzleGrid({
 
   return (
     <div
-      ref={ref}
       role="grid"
       aria-label={label}
-      aria-activedescendant={activeDescendant}
-      tabIndex={focusable ? 0 : undefined}
-      className={styles.grid}
+      className={showFocus ? `${styles.grid} ${styles.focused}` : styles.grid}
       style={{ '--columns': grid.columns } as CSSProperties}
-      onKeyDown={onKeyDown}
     >
       {rows.map((row, r) => (
         <div role="row" className={styles.row} key={r}>

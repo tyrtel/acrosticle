@@ -62,4 +62,19 @@ describe('keyToAction', () => {
     expect(keyToAction({ key: 'ArrowUp' }, 'clue')).toEqual({ type: 'jumpClue', delta: -1 });
     expect(keyToAction({ key: 'ArrowDown' }, 'clue')).toEqual({ type: 'jumpClue', delta: 1 });
   });
+
+  it.each([
+    [{ key: 'z', ctrlKey: true }, 'undo'],
+    [{ key: 'z', metaKey: true }, 'undo'],
+    [{ key: 'Z', ctrlKey: true, shiftKey: true }, 'redo'],
+    [{ key: 'z', metaKey: true, shiftKey: true }, 'redo'],
+    [{ key: 'y', ctrlKey: true }, 'redo'],
+  ])('maps %o to %s', (input, type) => {
+    expect(keyToAction(input, 'grid')).toEqual({ type });
+  });
+
+  it('leaves other modifier combinations to the browser', () => {
+    expect(keyToAction({ key: 'z', altKey: true, ctrlKey: true }, 'grid')).toBeNull();
+    expect(keyToAction({ key: 'y', metaKey: true }, 'grid')).toBeNull();
+  });
 });

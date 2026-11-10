@@ -11,6 +11,8 @@ Milestones M1–M4 are done and deployed; M5 (image parsing) and M6 (polish) are
 | F3  | Any character in answer cells, not just A–Z                 | Medium | ✅ Done (2026-11-10)                   |
 | F4  | Light / dark theme switch                                   | Small  | ✅ Done (2026-11-10)                   |
 | F5  | Multi-character entries in a cell                           | Large  | M6 (polish), after a design discussion |
+| F6  | Typing on phones, and with dead keys / input methods        | Medium | ✅ Done (2026-11-10)                   |
+| F7  | Undo and Redo (buttons, Ctrl/⌘+Z, Ctrl/⌘+Shift+Z, Ctrl+Y)   | Medium | ✅ Done (2026-11-10)                   |
 
 ## F1. Start a new puzzle from anywhere
 
@@ -66,7 +68,18 @@ Some puzzles put several letters in one square. This affects typing, how the cur
 size, the acrostic letters, validation, and the room protocol. To be designed later, with options and
 trade-offs, as part of M6.
 
-## Typing without key presses (M6, with the mobile keyboard)
+## F7. Undo and Redo
+
+**Decided (2026-11-10):** per-person undo of **your own** edits, one step per edit, with a button and
+keyboard shortcuts (Ctrl/⌘+Z; redo with Ctrl/⌘+Shift+Z or Ctrl+Y). If someone else has changed a square
+since your edit, that undo step is **skipped**, so you never erase a collaborator's work. History is kept
+for the current visit to a room (not across reloads). Redo is included.
+
+## F6. Typing without key presses (was: M6, with the mobile keyboard)
+
+**Done (2026-11-10):** typing now goes through one hidden text input placed on the selected square.
+Tapping a square focuses it (phones open their keyboard), and text arrives as input events, covering
+on-screen keyboards, swipe typing, dead keys and IMEs. Original notes:
 
 Found while testing F3: the solver listens for key presses, so text that arrives without them is
 skipped. That covers accents composed with dead keys (´ then e), input methods (IMEs) for languages
