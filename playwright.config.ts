@@ -10,7 +10,9 @@ export default defineConfig({
   globalSetup: './tests/e2e/global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  // The local Workers runtime occasionally stalls a Durable Object request for several seconds
+  // (seen in local dev only; see docs/architecture.md, Known issues), so retry once locally too.
+  retries: process.env.CI ? 2 : 1,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     baseURL: `http://localhost:${WEB_PORT}`,

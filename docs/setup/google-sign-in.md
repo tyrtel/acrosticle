@@ -77,21 +77,30 @@ Your account gets one subdomain on `workers.dev`, shared by all your Workers. Wi
 | The app says sign-in isn't set up           | Restart `npm run dev` after writing `.dev.vars`.                                                                     |
 | Signed in, but Import says it isn't enabled | Your email isn't in `CREATOR_ALLOWLIST`: run `npm run setup:signin` again.                                           |
 
-## 4. At deploy time
+## 4. Deploying
 
-Run these from `apps/worker` after `npx wrangler login`:
+Run from the project root.
 
-1. Create the production database and paste the printed `database_id` into `wrangler.jsonc` (replacing the
-   all-zeros placeholder):
+1. **Log Wrangler into your Cloudflare account** (opens a browser):
    ```
-   npx wrangler d1 create acrosticle
+   npx wrangler login
    ```
-2. Apply the schema: `npm run db:migrate:remote`
-3. Put the client id (public) in `wrangler.jsonc` → `vars.GOOGLE_CLIENT_ID`.
-4. Set the secrets (each command prompts for the value):
+2. **First time only: create the production database** and paste the printed `database_id` into
+   `apps/worker/wrangler.jsonc`, replacing the all-zeros placeholder:
    ```
-   npx wrangler secret put GOOGLE_CLIENT_SECRET
-   npx wrangler secret put CREATOR_ALLOWLIST
+   cd apps/worker && npx wrangler d1 create acrosticle && cd ../..
    ```
-5. Deploy. Serving the web app itself from the Worker (static assets) is set up in the deployment
-   milestone.
+3. **Deploy.** The first time, add `--secrets` to upload `GOOGLE_CLIENT_SECRET` and `CREATOR_ALLOWLIST`
+   from your local `apps/worker/.dev.vars` (through a temporary file readable only by you, deleted
+   afterwards; values are never printed):
+   ```
+   npm run deploy -- --secrets
+   ```
+   Later deploys only need `npm run deploy` (secrets stay on Cloudflare). To change a secret on its own:
+   `cd apps/worker && npx wrangler secret put CREATOR_ALLOWLIST`.
+4. The deploy builds the web app, applies database migrations, deploys the Worker, and then runs
+   `npm run smoke` against <https://acrosticle.tyrtel.workers.dev>. You can re-run that check any time.
+5. Sign in on the live site. If Google says `redirect_uri_mismatch`, check that
+   `https://acrosticle.tyrtel.workers.dev/api/auth/google/callback` is on the client's redirect URIs.
+
+The public client ID lives in `apps/worker/wrangler.jsonc` (`vars.GOOGLE_CLIENT_ID`); it isn't a secret.

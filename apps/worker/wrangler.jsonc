@@ -6,12 +6,22 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
 
+  // The built web app (apps/web/dist) is served from this Worker. API routes run the
+  // Worker code first; any other path that isn't a file gets index.html, so client-side
+  // routes like /r/<room> and /my work on reload.
+  "assets": {
+    "directory": "../web/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
+  },
+
   // Public settings. APP_ORIGIN is the address users see: Google redirects back to it after
   // sign-in. `npm run dev` overrides it with http://localhost:5173.
   "vars": {
     "APP_ORIGIN": "https://acrosticle.tyrtel.workers.dev",
     // OAuth client id from Google Cloud (public, not a secret). Empty = sign-in disabled.
-    "GOOGLE_CLIENT_ID": "",
+    // Public OAuth client id (not a secret). The client secret is a Cloudflare secret.
+    "GOOGLE_CLIENT_ID": "767819622752-ps8a60je9mi6up825r0gngp81jgv84cf.apps.googleusercontent.com",
   },
   // Secrets: never in this file. Set with `wrangler secret put NAME` (locally: apps/worker/.dev.vars).
   // CREATOR_ALLOWLIST is comma-separated emails allowed to create rooms for their own puzzles;
@@ -24,7 +34,7 @@
     {
       "binding": "DB",
       "database_name": "acrosticle",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "54f74433-3676-418a-94f0-06fd14ec1398",
       "migrations_dir": "migrations",
     },
   ],

@@ -76,6 +76,14 @@ Room ids are 128 random bits (22 base64url characters). The link is the access c
 Idle rooms cost nothing: the WebSocket Hibernation API lets the room leave memory while keeping
 connections, and per-connection state lives in socket attachments.
 
+## Known issues
+
+- **Local Durable Object stalls.** In local development (`wrangler dev` on WSL), a request to a room
+  occasionally takes several seconds (once about 40 s) instead of milliseconds, mostly soon after the
+  servers start. The room's own code is synchronous, so the delay is in the local runtime. Browser tests
+  warm up the servers and retry once locally to absorb it. To confirm after each deploy: room requests on
+  Cloudflare stay fast (`npm run smoke`).
+
 ## Decisions and open questions
 
 Product decisions (no answer checking, sign-in to create puzzles, link-based editing, rooms kept
