@@ -64,7 +64,7 @@ other solvers' colors) for contrast.
 
 ## F5. Multi-character entries
 
-**Designed (2026-11-12).** Decisions in [ADR 0005](../adr/0005-multi-character-entries.md).
+**Done (2026-11-12).** Decisions in [ADR 0005](../adr/0005-multi-character-entries.md).
 
 **Decided:**
 
@@ -84,7 +84,7 @@ other solvers' colors) for contrast.
 | Enter, Tab, Shift+Enter       | Saves; the cursor advances as after a normal letter                 |
 | Insert                        | Also saves (it toggles the mode)                                    |
 | Escape                        | Cancels; the square is unchanged                                    |
-| Click or tap another square   | Saves, then moves                                                   |
+| Click or tap elsewhere        | Saves; moves if a square was clicked                                |
 | Empty the box, then save      | Clears the square                                                   |
 
 In this mode the solver's hidden input becomes a visible text box over the square, so caret
@@ -108,7 +108,7 @@ The "…" marks an entry that's cut short (the square's corner already holds its
   the same way.
 - Screen-reader labels always include the full entry.
 
-### Build order (each step tested and shippable)
+### Build order (each step tested; all four done 2026-11-12)
 
 1. **Core:** widen `Entry` (1–100 graphemes, inner spaces) and add a `firstCharacter` helper for the
    acrostic. Review every `isEntry` / `normalizeEntry` caller so single-key typing stays single.

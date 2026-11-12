@@ -38,6 +38,14 @@ describe('keyToAction', () => {
     expect(keyToAction({ key: 'Enter' }, 'grid')).toEqual({ type: 'toggleView' });
   });
 
+  it.each([
+    ['Shift+Enter', { key: 'Enter', shiftKey: true }],
+    ['Insert', { key: 'Insert' }],
+  ])('maps %s to multi-letter mode, in both views', (_, input) => {
+    expect(keyToAction(input, 'grid')).toEqual({ type: 'multiLetter' });
+    expect(keyToAction(input, 'clue')).toEqual({ type: 'multiLetter' });
+  });
+
   it('maps Tab and Shift+Tab to clue jumps', () => {
     expect(keyToAction({ key: 'Tab' }, 'grid')).toEqual({ type: 'jumpClue', delta: 1 });
     expect(keyToAction({ key: 'Tab', shiftKey: true }, 'grid')).toEqual({

@@ -51,3 +51,26 @@ test('a mistyped room link explains the problem', async ({ page }) => {
   await page.goto('/r/AAAAAAAAAAAAAAAAAAAAAA');
   await expect(page.getByRole('heading', { name: 'Room not found' })).toBeVisible();
 });
+
+test('a multi-letter entry reaches everyone in the room', async ({ browser, isMobile }) => {
+  const ada = await (await browser.newContext()).newPage();
+  const bo = await (await browser.newContext()).newPage();
+  const roomUrl = await startSampleRoom(ada, 'Ada');
+  await bo.goto(roomUrl);
+  await join(bo, 'Bo');
+
+  await square(ada, 3).click();
+  if (isMobile) {
+    // Phones have no Shift+Enter or Insert: use the button.
+    await ada.getByRole('button', { name: 'Multi-letter' }).click();
+  } else {
+    await ada.keyboard.press('Shift+Enter');
+  }
+  const box = ada.getByRole('textbox', { name: 'Multi-letter entry' });
+  await expect(box).toBeVisible();
+  await box.pressSequentially('E or I');
+  await ada.keyboard.press('Enter');
+
+  await expect(bo.getByRole('gridcell', { name: 'Square 3, clue P, E or I' })).toBeVisible();
+  await expect(square(bo, 3)).toContainText('E or');
+});

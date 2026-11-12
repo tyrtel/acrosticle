@@ -1,6 +1,7 @@
 import {
   enterEntry,
   erase,
+  getCell,
   jumpToClue,
   moveInGrid,
   step,
@@ -17,6 +18,8 @@ import {
 export type SolverAction =
   | { readonly type: 'select'; readonly cell: CellNumber; readonly view: View }
   | { readonly type: 'input'; readonly entry: Entry }
+  /** Finish multi-letter mode: write the whole entry (null clears the square). */
+  | { readonly type: 'save'; readonly value: Entry | null }
   | { readonly type: 'erase' }
   | { readonly type: 'clear' }
   | { readonly type: 'move'; readonly direction: Direction }
@@ -49,6 +52,8 @@ export function reduceSolver(
       return move({ cell: action.cell, view: action.view });
     case 'input':
       return enterEntry(index, selection, action.entry);
+    case 'save':
+      return save(index, solve, selection, action.value);
     case 'erase':
       return erase(index, solve, selection);
     case 'clear':
@@ -62,4 +67,22 @@ export function reduceSolver(
     case 'toggleView':
       return move({ ...selection, view: selection.view === 'grid' ? 'clue' : 'grid' });
   }
+}
+
+/**
+ * Saving an entry advances like typing a letter; saving it empty clears the
+ * square in place. Unchanged values send no edit.
+ */
+function save(
+  index: PuzzleIndex,
+  solve: SolveState,
+  selection: Selection,
+  value: Entry | null,
+): SolverResult {
+  const changed = getCell(solve, selection.cell) !== value;
+  if (value === null) {
+    return { selection, edit: changed ? { cell: selection.cell, value: null } : null };
+  }
+  const typed = enterEntry(index, selection, value);
+  return changed ? typed : { ...typed, edit: null };
 }

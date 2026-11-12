@@ -1,8 +1,12 @@
 import { normalizeEntry, type View } from '@acrosticle/core';
 import type { SolverAction } from './solverReducer';
 
-/** What a key does: a solver action, or a step through your edit history. */
-export type KeyAction = SolverAction | { readonly type: 'undo' } | { readonly type: 'redo' };
+/** What a key does: a solver action, a step through your edit history, or multi-letter mode. */
+export type KeyAction =
+  | SolverAction
+  | { readonly type: 'undo' }
+  | { readonly type: 'redo' }
+  | { readonly type: 'multiLetter' };
 
 /** The parts of a keyboard event the keymap needs (easy to build in tests). */
 export interface KeyInput {
@@ -25,6 +29,7 @@ export interface KeyInput {
  * | Backspace     | clear, or back and clear   | clear, or back and clear     |
  * | Delete        | clear in place             | clear in place               |
  * | Enter         | switch to clue view        | switch to grid view          |
+ * | ⇧Enter, Insert | type several characters in this square (multi-letter mode)   |
  * | Ctrl/⌘+Z      | undo your last edit        | undo your last edit          |
  * | Ctrl/⌘+⇧Z, Ctrl+Y | redo                   | redo                         |
  */
@@ -42,7 +47,9 @@ export function keyToAction(input: KeyInput, view: View): KeyAction | null {
     case 'Delete':
       return { type: 'clear' };
     case 'Enter':
-      return { type: 'toggleView' };
+      return input.shiftKey ? { type: 'multiLetter' } : { type: 'toggleView' };
+    case 'Insert':
+      return { type: 'multiLetter' };
     case 'Tab':
       return { type: 'jumpClue', delta: input.shiftKey ? -1 : 1 };
     case 'ArrowLeft':

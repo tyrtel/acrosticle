@@ -72,6 +72,36 @@ describe('reduceSolver', () => {
     });
   });
 
+  describe('save (multi-letter mode)', () => {
+    it('writes the entry and advances, like typing a letter', () => {
+      expect(run(at(1), { type: 'save', value: L('TH') })).toEqual({
+        selection: at(2),
+        edit: { cell: 1, value: 'TH' },
+      });
+    });
+
+    it('clears the square when saved empty, staying put', () => {
+      const solve = setCell(emptySolveState, 1, L('TH'));
+      expect(run(at(1), { type: 'save', value: null }, solve)).toEqual({
+        selection: at(1),
+        edit: { cell: 1, value: null },
+      });
+    });
+
+    it('sends no edit when nothing changed, but still advances', () => {
+      const solve = setCell(emptySolveState, 1, L('TH'));
+      expect(run(at(1), { type: 'save', value: L('TH') }, solve)).toEqual({
+        selection: at(2),
+        edit: null,
+      });
+      expect(run(at(1), { type: 'save', value: null })).toEqual({ selection: at(1), edit: null });
+    });
+
+    it('advances in the clue view along the answer', () => {
+      expect(run(at(3, 'clue'), { type: 'save', value: L('TH') }).selection).toEqual(at(1, 'clue'));
+    });
+  });
+
   it('moves, steps and jumps between clues without editing', () => {
     expect(run(at(1), { type: 'move', direction: 'down' })).toEqual({
       selection: at(4),

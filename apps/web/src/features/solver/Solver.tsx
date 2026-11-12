@@ -5,6 +5,8 @@ import {
   canUndo,
   describeSelection,
   emptyHistory,
+  getCell,
+  MAX_ENTRY_LENGTH,
   recordEdit,
   redo,
   undo,
@@ -32,7 +34,8 @@ import { Grid } from './Grid';
 import { keyToAction, type KeyAction } from './keymap';
 import styles from './Solver.module.css';
 import { initialSelection, reduceSolver } from './solverReducer';
-import { entriesFromText } from './textInput';
+import { entriesFromText, entryFromEditBox } from './textInput';
+import { useMultiLetter } from './useMultiLetter';
 
 const NO_PEERS: PeerMap = new Map();
 
@@ -105,9 +108,35 @@ export function Solver({
     [onEdit],
   );
 
+  /** Saves multi-letter mode's text as one edit. */
+  const saveMultiLetter = useCallback(
+    (text: string, advance: boolean) => {
+      const value = entryFromEditBox(text);
+      // The box's length limit and the keyboard can't produce invalid text; keep the square as it was.
+      if (value === undefined) return;
+      const result = reduceSolver(index, solve, selection, { type: 'save', value });
+      if (result.edit) emit(result.edit, solve);
+      if (advance) setSelection(result.selection);
+    },
+    [index, solve, selection, emit],
+  );
+  const {
+    editing: multiLetterOn,
+    isEditing: isMultiLetterOn,
+    start: startMultiLetter,
+    save: finishMultiLetter,
+    cancel: cancelMultiLetter,
+  } = useMultiLetter({
+    inputRef,
+    resetInput,
+    currentEntry: getCell(solve, selection.cell),
+    onSave: saveMultiLetter,
+  });
+
   /** Undo or redo one of your edits, moving the cursor to the square it changed. */
   const step = useCallback(
     (which: 'undo' | 'redo') => {
+      cancelMultiLetter();
       endComposition();
       const result = (which === 'undo' ? undo : redo)(history, solve);
       setHistory(result.history);
@@ -116,7 +145,7 @@ export function Solver({
       onEdit(edit);
       setSelection((current) => ({ ...current, cell: edit.cell }));
     },
-    [history, solve, onEdit, endComposition],
+    [history, solve, onEdit, endComposition, cancelMultiLetter],
   );
 
   const apply = useCallback(
@@ -126,11 +155,15 @@ export function Solver({
         step(action.type);
         return;
       }
+      if (action.type === 'multiLetter') {
+        startMultiLetter();
+        return;
+      }
       const result = reduceSolver(index, solve, selection, action);
       setSelection(result.selection);
       if (result.edit) emit(result.edit, solve);
     },
-    [index, solve, selection, emit, step, endComposition],
+    [index, solve, selection, emit, step, endComposition, startMultiLetter],
   );
 
   /** Types each entry in turn, advancing like separate key presses. */
@@ -168,15 +201,17 @@ export function Solver({
   );
 
   // Native listeners: React's onBeforeInput doesn't expose inputType (needed for deletes).
-  const latest = useRef({ apply, typeText, compose });
+  const latest = useRef({ apply, typeText, compose, isEditing: isMultiLetterOn });
   useEffect(() => {
-    latest.current = { apply, typeText, compose };
-  }, [apply, typeText, compose]);
+    latest.current = { apply, typeText, compose, isEditing: isMultiLetterOn };
+  }, [apply, typeText, compose, isMultiLetterOn]);
 
   useEffect(() => {
     const input = inputRef.current;
     if (!input) return;
+    // In multi-letter mode the input is a plain text box: let the browser edit it.
     const onBeforeInput = (event: InputEvent) => {
+      if (latest.current.isEditing()) return;
       if (event.isComposing) return; // composing text is handled on input (below)
       if (event.inputType === 'historyUndo' || event.inputType === 'historyRedo') {
         // e.g. an Edit menu or shake-to-undo
@@ -196,6 +231,7 @@ export function Solver({
     // keyboards compose every word, even plain letters, and may never end. The
     // input keeps the composing text until then, so the keyboard stays in step.
     const onInput = (event: Event) => {
+      if (latest.current.isEditing()) return;
       if (event instanceof InputEvent && event.isComposing) {
         latest.current.compose(input.value.replace(SENTINEL, ''));
       } else {
@@ -203,6 +239,7 @@ export function Solver({
       }
     };
     const onCompositionEnd = (event: CompositionEvent) => {
+      if (latest.current.isEditing()) return;
       latest.current.compose(event.data);
       compositionRef.current = null;
       queueMicrotask(resetInput);
@@ -231,6 +268,9 @@ export function Solver({
       const t = target.getBoundingClientRect();
       const r = root.getBoundingClientRect();
       input.style.transform = `translate(${t.left - r.left}px, ${t.top - r.top}px)`;
+      // The multi-letter edit box covers the square (see .editing).
+      input.style.setProperty('--target-width', `${t.width}px`);
+      input.style.setProperty('--target-height', `${t.height}px`);
     }
   }, [selection]);
 
@@ -242,6 +282,10 @@ export function Solver({
   const lastCluePosition = index.clues.length - 1;
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.nativeEvent.isComposing || event.key === 'Process') return;
+    if (multiLetterOn) {
+      onEditBoxKeyDown(event);
+      return;
+    }
     const action = keyToAction(event, selection.view);
     // Characters come through input events instead (see above).
     if (!action || action.type === 'input') return;
@@ -256,19 +300,31 @@ export function Solver({
     apply(action);
   };
 
+  /** In multi-letter mode, only saving and cancelling keys are ours; the rest edit the text. */
+  const onEditBoxKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelMultiLetter();
+    } else if (event.key === 'Enter' || event.key === 'Tab' || event.key === 'Insert') {
+      event.preventDefault();
+      finishMultiLetter(true);
+    }
+  };
+
   const select = useCallback(
     (cell: CellNumber, view: 'grid' | 'clue') => {
+      finishMultiLetter(false);
       endComposition();
       setSelection({ cell, view });
       inputRef.current?.focus({ preventScroll: true });
     },
-    [endComposition],
+    [endComposition, finishMultiLetter],
   );
   const selectInGrid = useCallback((cell: CellNumber) => select(cell, 'grid'), [select]);
   const selectInClues = useCallback((cell: CellNumber) => select(cell, 'clue'), [select]);
 
   const entry = solve[selection.cell];
-  const where = `Square ${selection.cell}, clue ${context.clue} letter ${context.position + 1} of ${context.clueCells.length}, ${entry ?? 'empty'}`;
+  const where = `Square ${selection.cell}, clue ${context.clue} letter ${context.position + 1} of ${context.clueCells.length}, ${entry ?? 'empty'}${multiLetterOn ? ', typing several letters: Enter saves, Escape cancels' : ''}`;
 
   return (
     <div className={styles.solver} ref={rootRef}>
@@ -279,29 +335,36 @@ export function Solver({
       <AcrosticBar index={index} solve={solve} />
       <input
         ref={inputRef}
-        className={styles.entry}
-        aria-label="Answer entry"
+        className={multiLetterOn ? `${styles.entry} ${styles.editing}` : styles.entry}
+        aria-label={multiLetterOn ? 'Multi-letter entry' : 'Answer entry'}
         aria-describedby="solver-where"
         defaultValue={SENTINEL}
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
         spellCheck={false}
-        enterKeyHint="next"
+        maxLength={multiLetterOn ? MAX_ENTRY_LENGTH : undefined}
+        enterKeyHint={multiLetterOn ? 'done' : 'next'}
         onKeyDown={onKeyDown}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onBlur={() => {
+          setFocused(false);
+          // Clicking elsewhere keeps what was typed.
+          finishMultiLetter(false);
+        }}
       />
       <p id="solver-where" className="visually-hidden" aria-live="polite">
         {where}
       </p>
       <div className={styles.layout} style={layoutStyle(index)}>
         <div className={styles.gridPane}>
-          <HistoryButtons
+          <EditTools
             canUndo={canUndo(history, solve)}
             canRedo={canRedo(history, solve)}
             onUndo={() => step('undo')}
             onRedo={() => step('redo')}
+            multiLetter={multiLetterOn}
+            onMultiLetter={() => (multiLetterOn ? finishMultiLetter(true) : startMultiLetter())}
           />
           <Grid
             index={index}
@@ -342,20 +405,30 @@ function layoutStyle(index: PuzzleIndex): CSSProperties {
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
-interface HistoryButtonsProps {
+interface EditToolsProps {
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly onUndo: () => void;
   readonly onRedo: () => void;
+  /** Multi-letter mode is on. */
+  readonly multiLetter: boolean;
+  readonly onMultiLetter: () => void;
 }
 
-/** Undo/Redo buttons. They don't take focus, so typing continues after a click. */
-function HistoryButtons({ canUndo, canRedo, onUndo, onRedo }: HistoryButtonsProps) {
+/** Undo, Redo and Multi-letter. They don't take focus, so typing continues after a click. */
+function EditTools({
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+  multiLetter,
+  onMultiLetter,
+}: EditToolsProps) {
   const keepFocus = (event: { preventDefault: () => void }) => event.preventDefault();
   const undoKeys = IS_MAC ? '⌘Z' : 'Ctrl+Z';
   const redoKeys = IS_MAC ? '⇧⌘Z' : 'Ctrl+Y';
   return (
-    <div className={styles.toolbar} role="toolbar" aria-label="Edit history">
+    <div className={styles.toolbar} role="toolbar" aria-label="Editing">
       <button
         type="button"
         onMouseDown={keepFocus}
@@ -375,6 +448,20 @@ function HistoryButtons({ canUndo, canRedo, onUndo, onRedo }: HistoryButtonsProp
         aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y"
       >
         <span aria-hidden="true">↷</span> Redo
+      </button>
+      <button
+        type="button"
+        onMouseDown={keepFocus}
+        onClick={onMultiLetter}
+        aria-pressed={multiLetter}
+        title={
+          multiLetter
+            ? 'Save the letters in this square (Enter)'
+            : 'Type several letters in this square (Shift+Enter or Insert)'
+        }
+        aria-keyshortcuts="Shift+Enter Insert"
+      >
+        Multi-letter
       </button>
     </div>
   );

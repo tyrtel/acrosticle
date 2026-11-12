@@ -284,6 +284,123 @@ describe('Solver', () => {
     });
   });
 
+  describe('multi-letter mode', () => {
+    const editBox = () => screen.getByRole('textbox', { name: 'Multi-letter entry' });
+
+    it('Shift+Enter opens an edit box; Enter saves the whole entry as one edit and advances', async () => {
+      const onEdit = vi.fn();
+      const { user } = setup({ onEdit });
+      await user.click(square(1));
+      await user.keyboard('{Shift>}{Enter}{/Shift}');
+      expect(editBox()).toHaveFocus();
+      expect(editBox()).toHaveValue('');
+
+      await user.keyboard('E or I');
+      // Nothing is written until it's saved.
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
+      expect(onEdit).not.toHaveBeenCalled();
+
+      await user.keyboard('{Enter}');
+      expect(onEdit).toHaveBeenCalledExactlyOnceWith({ cell: 1, value: 'E or I' });
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, E or I');
+      expect(square(2)).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('textbox', { name: 'Answer entry' })).toHaveFocus();
+    });
+
+    it('Insert opens the box, and Insert again saves', async () => {
+      const { user } = setup();
+      await user.click(square(4));
+      await user.keyboard('{Insert}TH{Insert}');
+      expect(square(4)).toHaveAccessibleName('Square 4, clue B, TH');
+    });
+
+    it('starts from what the square holds; Escape cancels without changing it', async () => {
+      const { user } = setup();
+      await user.click(square(1));
+      await user.keyboard('Q');
+      await user.click(square(1));
+      await user.keyboard('{Insert}');
+      expect(editBox()).toHaveValue('Q');
+      await user.keyboard('UEUE{Escape}');
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, Q');
+      expect(square(1)).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('clears the square when saved empty, staying on it', async () => {
+      const { user } = setup();
+      await user.click(square(1));
+      await user.keyboard('{Insert}TH{Enter}');
+      await user.click(square(1));
+      await user.keyboard('{Insert}');
+      await user.clear(editBox());
+      await user.keyboard('{Enter}');
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
+      expect(square(1)).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('keeps the typing when another square is clicked, then moves there', async () => {
+      const { user } = setup();
+      await user.click(square(1));
+      await user.keyboard('{Insert}ST');
+      await user.click(square(4));
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, ST');
+      expect(square(4)).toHaveAttribute('aria-selected', 'true');
+      expect(screen.queryByRole('textbox', { name: 'Multi-letter entry' })).toBeNull();
+    });
+
+    it('works from the clue list too, advancing along the answer', async () => {
+      const { user } = setup();
+      await user.click(blank(3));
+      await user.keyboard('{Shift>}{Enter}{/Shift}TH{Enter}');
+      expect(blank(3)).toHaveAccessibleName(/^Clue A, letter 1 of 3, square 3, TH$/);
+      expect(blank(1)).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('has a Multi-letter button for phones and mice, showing whether the mode is on', async () => {
+      const { user } = setup();
+      await user.click(square(2));
+      const button = screen.getByRole('button', { name: 'Multi-letter' });
+      expect(button).toHaveAttribute('aria-pressed', 'false');
+      await user.click(button);
+      expect(button).toHaveAttribute('aria-pressed', 'true');
+      expect(editBox()).toHaveFocus();
+      await user.keyboard('ING');
+      await user.click(button);
+      expect(button).toHaveAttribute('aria-pressed', 'false');
+      expect(square(2)).toHaveAccessibleName('Square 2, clue B, ING');
+    });
+
+    it('is undone in one step', async () => {
+      const { user } = setup();
+      await user.click(square(1));
+      await user.keyboard('Q');
+      await user.click(square(1));
+      await user.keyboard('{Insert}QUEUE{Enter}');
+      await user.click(screen.getByRole('button', { name: /Undo/ }));
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, Q');
+    });
+
+    it('cancels when Undo is used mid-edit', async () => {
+      const { user } = setup();
+      await user.click(square(1));
+      await user.keyboard('Q');
+      await user.click(square(2));
+      await user.keyboard('{Insert}XYZ');
+      await user.click(screen.getByRole('button', { name: /Undo/ }));
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
+      expect(square(2)).toHaveAccessibleName('Square 2, clue B, empty');
+    });
+
+    it('does not spread a pasted or composed word across squares while editing', async () => {
+      const { user, entry } = setup();
+      await user.click(square(1));
+      await user.keyboard('{Insert}');
+      fireEvent.compositionEnd(entry, { data: 'ねこ' });
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
+      expect(square(2)).toHaveAccessibleName('Square 2, clue B, empty');
+    });
+  });
+
   describe('undo and redo', () => {
     it('undoes your edits with the button or Ctrl+Z, newest first, and redoes them', async () => {
       const { user } = setup();

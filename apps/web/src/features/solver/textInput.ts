@@ -15,3 +15,12 @@ export function entriesFromText(text: string): Entry[] {
   }
   return entries;
 }
+
+/**
+ * What saving the multi-letter edit box writes: an entry, null to clear the
+ * square (blank box), or undefined if the text can't be an entry.
+ */
+export function entryFromEditBox(text: string): Entry | null | undefined {
+  if (text.trim() === '') return null;
+  return normalizeEntry(text) ?? undefined;
+}

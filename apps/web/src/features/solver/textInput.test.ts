@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { entriesFromText } from './textInput';
+import { MAX_ENTRY_LENGTH } from '@acrosticle/core';
+import { entriesFromText, entryFromEditBox } from './textInput';
 
 describe('entriesFromText', () => {
   it('turns typed text into one entry per character, keeping case', () => {
@@ -28,5 +29,22 @@ describe('entriesFromText', () => {
 
   it('returns nothing for empty text', () => {
     expect(entriesFromText('')).toEqual([]);
+  });
+});
+
+describe('entryFromEditBox', () => {
+  it.each([
+    ['TH', 'TH'],
+    ['  E   or I ', 'E or I'],
+    ['x', 'x'],
+    ['', null],
+    ['   ', null],
+  ])('%j -> %j', (text, expected) => {
+    expect(entryFromEditBox(text)).toBe(expected);
+  });
+
+  it('refuses text that cannot be an entry', () => {
+    expect(entryFromEditBox('A'.repeat(MAX_ENTRY_LENGTH + 1))).toBeUndefined();
+    expect(entryFromEditBox('A\u0007B')).toBeUndefined();
   });
 });
