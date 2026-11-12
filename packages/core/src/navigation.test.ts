@@ -11,7 +11,10 @@ import {
   type Selection,
 } from './navigation';
 import { buildPuzzleIndex } from './puzzleIndex';
+import { normalizeEntry, type Entry } from './entries';
 import { emptySolveState, setCell } from './solveState';
+
+const entry = (value: string) => normalizeEntry(value) as Entry;
 
 //   1A 2B  #  3A
 //   4B  #  5A
@@ -139,5 +142,10 @@ describe('acrosticLetters', () => {
   it("returns each clue's first letter, or null if empty", () => {
     const state = setCell(emptySolveState, 3, letter('D'));
     expect(acrosticLetters(index, state)).toEqual(['D', null]);
+  });
+
+  it('takes only the first character of a multi-character square', () => {
+    const state = setCell(setCell(emptySolveState, 3, entry('THE')), 4, entry('E or I'));
+    expect(acrosticLetters(index, state)).toEqual(['T', 'E']);
   });
 });

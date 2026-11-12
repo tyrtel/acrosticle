@@ -1,4 +1,4 @@
-import type { Entry } from '@acrosticle/core';
+import { MAX_ENTRY_LENGTH, type Entry } from '@acrosticle/core';
 import { describe, expect, it } from 'vitest';
 import {
   encodeMessage,
@@ -24,8 +24,8 @@ describe('parseClientMessage', () => {
     expect(parseClientMessage(json({ ...set, value: null })).ok).toBe(true);
   });
 
-  it('accepts lowercase, digits, symbols and accented letters', () => {
-    for (const value of ['q', '7', '&', 'ñ']) {
+  it('accepts lowercase, digits, symbols, accented letters and multi-character entries', () => {
+    for (const value of ['q', '7', '&', 'ñ', 'TH', 'E or I', 'A'.repeat(MAX_ENTRY_LENGTH)]) {
       expect(parseClientMessage(json({ type: 'cell/set', cell: 1, value, clientSeq: 0 })).ok).toBe(
         true,
       );
@@ -49,7 +49,9 @@ describe('parseClientMessage', () => {
   it.each([
     ['unknown type', { type: 'nope' }],
     ['a space', { ...set, value: ' ' }],
-    ['multi-char value', { ...set, value: 'AB' }],
+    ['an over-long value', { ...set, value: 'A'.repeat(MAX_ENTRY_LENGTH + 1) }],
+    ['a leading space', { ...set, value: ' A' }],
+    ['two spaces in a row', { ...set, value: 'A  B' }],
     ['zero cell', { ...set, cell: 0 }],
     ['fractional cell', { ...set, cell: 1.5 }],
     ['missing clientSeq', { type: 'cell/set', cell: 1, value: 'A' }],
@@ -90,8 +92,10 @@ describe('parseServerMessage', () => {
     expect(parseServerMessage(encodeMessage(message))).toEqual({ ok: true, value: message });
   });
 
-  it('rejects a snapshot with a multi-character entry', () => {
-    expect(parseServerMessage(json({ ...snapshot, cells: [[1, 'ab']] })).ok).toBe(false);
+  it('accepts a snapshot with a multi-character entry, but not an over-long one', () => {
+    expect(parseServerMessage(json({ ...snapshot, cells: [[1, 'ab']] })).ok).toBe(true);
+    const tooLong = 'a'.repeat(MAX_ENTRY_LENGTH + 1);
+    expect(parseServerMessage(json({ ...snapshot, cells: [[1, tooLong]] })).ok).toBe(false);
   });
 
   it('rejects client-only messages', () => {

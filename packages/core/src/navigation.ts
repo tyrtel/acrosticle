@@ -1,4 +1,4 @@
-import type { Entry } from './entries';
+import { firstCharacter, type Entry } from './entries';
 import type { CellNumber, ClueLabel } from './puzzle';
 import type { PuzzleIndex } from './puzzleIndex';
 import { getCell, type CellEdit, type SolveState } from './solveState';
@@ -124,12 +124,14 @@ export function erase(index: PuzzleIndex, state: SolveState, selection: Selectio
 
 /**
  * The first letter of each clue's answer, in clue order. When solved these
- * spell the author and title of the quotation's source.
+ * spell the author and title of the quotation's source. A square holding
+ * several characters contributes only its first.
  */
 export function acrosticLetters(index: PuzzleIndex, state: SolveState): (Entry | null)[] {
   return index.clues.map((clue) => {
     const first = clue.cells[0];
-    return first === undefined ? null : getCell(state, first);
+    const entry = first === undefined ? null : getCell(state, first);
+    return entry === null ? null : firstCharacter(entry);
   });
 }
 

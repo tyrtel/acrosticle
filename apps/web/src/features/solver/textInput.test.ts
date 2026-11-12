@@ -18,8 +18,12 @@ describe('entriesFromText', () => {
     expect(entriesFromText('a b\tc\u0000')).toEqual(['a', 'b', 'c']);
   });
 
-  it('skips characters made of several code points that do not compose into one', () => {
-    expect(entriesFromText('👍🏽x')).toEqual(['x']);
+  it('keeps a character made of several code points (emoji with skin tone) as one entry', () => {
+    expect(entriesFromText('👍🏽x')).toEqual(['👍🏽', 'x']);
+  });
+
+  it('never puts several characters in one entry, even for spaced text', () => {
+    expect(entriesFromText('E or I')).toEqual(['E', 'o', 'r', 'I']);
   });
 
   it('returns nothing for empty text', () => {

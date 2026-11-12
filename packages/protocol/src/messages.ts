@@ -1,4 +1,4 @@
-import { isEntry } from '@acrosticle/core';
+import { isEntry, MAX_ENTRY_LENGTH } from '@acrosticle/core';
 import { z } from 'zod';
 import { validateWith, type ParseResult } from './parseResult';
 import { PuzzleFile } from './puzzleFile';
@@ -13,7 +13,12 @@ import { PuzzleFile } from './puzzleFile';
  */
 
 const cellNumber = z.number().int().positive();
-const entry = z.string().refine(isEntry, 'must be one letter, digit or symbol (no spaces)');
+const entry = z
+  .string()
+  .refine(
+    isEntry,
+    `must be 1 to ${MAX_ENTRY_LENGTH} letters, digits or symbols (single spaces between)`,
+  );
 const entryOrNull = entry.nullable();
 const memberId = z.string().min(1).max(64);
 

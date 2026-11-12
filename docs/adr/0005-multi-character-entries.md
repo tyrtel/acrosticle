@@ -14,7 +14,7 @@ filters stored values with it, and the UI assumes one character when typing and 
 
 ## Decision
 
-1. **`Entry` becomes 1 to 100 characters** (graphemes, after NFC normalization and trimming). Allowed:
+1. **`Entry` becomes 1 to 100 characters** (code points, after NFC normalization and trimming). Allowed:
    letters, digits, punctuation and symbols, plus single spaces between them. No leading/trailing
    spaces, no runs of spaces, no control characters. Case is kept.
    - 100 is a safety bound for the server and other solvers, not a UI limit: far beyond real use,
