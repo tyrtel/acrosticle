@@ -11,9 +11,18 @@ import {
   type CellEdit,
   type CellNumber,
   type Puzzle,
+  type PuzzleIndex,
   type SolveState,
 } from '@acrosticle/core';
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from 'react';
 import type { PeerMap } from '../../components/PeerTag';
 import { AcrosticBar } from './AcrosticBar';
 import { ClueList } from './ClueList';
@@ -239,7 +248,7 @@ export function Solver({
       <p id="solver-where" className="visually-hidden" aria-live="polite">
         {where}
       </p>
-      <div className={styles.layout}>
+      <div className={styles.layout} style={layoutStyle(index)}>
         <div className={styles.gridPane}>
           <HistoryButtons
             canUndo={canUndo(history, solve)}
@@ -276,6 +285,12 @@ export function Solver({
       </div>
     </div>
   );
+}
+
+/** Tells the layout how many blanks the longest clue has, so its column can fit them on one line. */
+function layoutStyle(index: PuzzleIndex): CSSProperties {
+  const longest = Math.max(0, ...index.clues.map((clue) => clue.cells.length));
+  return { '--longest-clue': longest } as CSSProperties;
 }
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);

@@ -38,10 +38,21 @@
 }
 
 .layout {
-  /* Space for the grid beside a clue column of about 22rem. */
-  --grid-space: calc(min(100vw, 90rem) - 26rem);
+  /*
+   * The clue column is wide enough to fit the longest answer's blanks on one line
+   * (--longest-clue, set in Solver.tsx; each blank is 2.4rem with its gap, plus
+   * padding and a scrollbar), at least 22rem and at most 45% of the page. The grid
+   * gets the rest of the page (less the gap and page padding).
+   */
+  --page: min(100vw, 90rem);
+  --clue-space: clamp(
+    22rem,
+    calc(var(--longest-clue, 0) * 2.4rem + 2.4rem),
+    calc(var(--page) * 0.45)
+  );
+  --grid-space: calc(var(--page) - var(--clue-space) - 4rem);
   display: grid;
-  grid-template-columns: auto minmax(20rem, 1fr);
+  grid-template-columns: auto minmax(var(--clue-space), 1fr);
   gap: 1.5rem;
   align-items: start;
 }

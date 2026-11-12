@@ -82,6 +82,13 @@ describe('Solver', () => {
     expect(screen.getByText('0 / 5 squares filled')).toBeInTheDocument();
   });
 
+  it('sizes the clue column for the longest answer', () => {
+    setup();
+    // The layout's CSS reads this to fit clue A's 3 blanks on one line.
+    const layout = screen.getByRole('grid', { name: 'Clues' }).parentElement?.parentElement;
+    expect(layout?.style.getPropertyValue('--longest-clue')).toBe('3');
+  });
+
   it('starts with the first grid square selected', () => {
     const { grid, entry } = setup();
     expect(square(1)).toHaveAttribute('aria-selected', 'true');
