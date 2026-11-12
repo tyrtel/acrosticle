@@ -526,5 +526,3 @@ of the Claude call against the sample image could run alongside M1.
 
 1. **Production address:** the free `workers.dev` address or a custom domain (Google needs exact URLs).
 2. **Spend cap:** the actual per-user limits and global daily budget for parsing.
-3. **Undo:** personal undo of your own edits, or none?
-4. **Mobile keyboard:** hidden input or a custom on-screen letter keyboard?

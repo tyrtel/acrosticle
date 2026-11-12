@@ -4,15 +4,15 @@ Requested features after the first deploy (2026-11-10), with recommendations and
 Milestones M1–M4 are done and deployed; M5 (image parsing) and M6 (polish) are planned in
 [design.md](design.md) §10.
 
-| #   | Feature                                                     | Size   | Proposed slot                          |
-| --- | ----------------------------------------------------------- | ------ | -------------------------------------- |
-| F1  | Get back to the start screen to begin a new puzzle          | Small  | ✅ Done (2026-11-10)                   |
-| F2  | "My puzzles" as a slide-in panel, with copy link and delete | Medium | ✅ Done (2026-11-10)                   |
-| F3  | Any character in answer cells, not just A–Z                 | Medium | ✅ Done (2026-11-10)                   |
-| F4  | Light / dark theme switch                                   | Small  | ✅ Done (2026-11-10)                   |
-| F5  | Multi-character entries in a cell                           | Large  | M6 (polish), after a design discussion |
-| F6  | Typing on phones, and with dead keys / input methods        | Medium | ✅ Done (2026-11-10)                   |
-| F7  | Undo and Redo (buttons, Ctrl/⌘+Z, Ctrl/⌘+Shift+Z, Ctrl+Y)   | Medium | ✅ Done (2026-11-10)                   |
+| #   | Feature                                                     | Size   | Proposed slot                        |
+| --- | ----------------------------------------------------------- | ------ | ------------------------------------ |
+| F1  | Get back to the start screen to begin a new puzzle          | Small  | ✅ Done (2026-11-10)                 |
+| F2  | "My puzzles" as a slide-in panel, with copy link and delete | Medium | ✅ Done (2026-11-10)                 |
+| F3  | Any character in answer cells, not just A–Z                 | Medium | ✅ Done (2026-11-10)                 |
+| F4  | Light / dark theme switch                                   | Small  | ✅ Done (2026-11-10)                 |
+| F5  | Multi-character entries in a cell                           | Large  | Designed (2026-11-12), next to build |
+| F6  | Typing on phones, and with dead keys / input methods        | Medium | ✅ Done (2026-11-10)                 |
+| F7  | Undo and Redo (buttons, Ctrl/⌘+Z, Ctrl/⌘+Shift+Z, Ctrl+Y)   | Medium | ✅ Done (2026-11-10)                 |
 
 ## F1. Start a new puzzle from anywhere
 
@@ -62,11 +62,61 @@ other solvers' colors) for contrast.
 
 **Decided (2026-11-10):** per device (account sync can come later).
 
-## F5. Multi-character entries (polish)
+## F5. Multi-character entries
 
-Some puzzles put several letters in one square. This affects typing, how the cursor moves, display
-size, the acrostic letters, validation, and the room protocol. To be designed later, with options and
-trade-offs, as part of M6.
+**Designed (2026-11-12).** Decisions in [ADR 0005](../adr/0005-multi-character-entries.md).
+
+**Decided:**
+
+- **Solvers choose** when a square gets several characters, whether the puzzle calls for it or as a
+  guess ("E or I"). Puzzles don't mark multi-character squares.
+- **Up to 100 characters** per square (a server safety bound, not shown in the UI). Spaces are
+  allowed between characters.
+- The **acrostic bar shows only the first character** of each answer's first square.
+- Start with **Shift+Enter** or **Insert**, or the **Multi-letter** button (for phones and mice).
+
+### Typing: multi-letter mode
+
+| Action                        | Effect                                                              |
+| ----------------------------- | ------------------------------------------------------------------- |
+| Shift+Enter, Insert or button | Opens an edit box on the selected square, holding its current entry |
+| Type                          | Builds up the entry (arrows move within the text; paste works)      |
+| Enter, Tab, Shift+Enter       | Saves; the cursor advances as after a normal letter                 |
+| Insert                        | Also saves (it toggles the mode)                                    |
+| Escape                        | Cancels; the square is unchanged                                    |
+| Click or tap another square   | Saves, then moves                                                   |
+| Empty the box, then save      | Clears the square                                                   |
+
+In this mode the solver's hidden input becomes a visible text box over the square, so caret
+movement, paste, phone keyboards, autocorrect and IMEs all work natively. Outside the mode,
+typing is unchanged (one character per square). Saving is one edit, so Undo restores the
+previous entry in one step. Other solvers see the entry only once it's saved.
+
+### Display: keeping long entries readable
+
+| Entry length | Grid square                                    |
+| ------------ | ---------------------------------------------- |
+| 1            | As today                                       |
+| 2–3          | Smaller text, one line                         |
+| 4–6          | Two lines, smaller again                       |
+| 7+           | First characters and "…", with a corner marker |
+
+- The **selected square shows its full entry** in a callout above it; hovering shows it too.
+- **Clue blanks** widen to fit short entries (up to about four characters' width), then truncate
+  the same way.
+- Screen-reader labels always include the full entry.
+
+### Build order (each step tested and shippable)
+
+1. **Core:** widen `Entry` (1–100 graphemes, inner spaces) and add a `firstCharacter` helper for the
+   acrostic. Review every `isEntry` / `normalizeEntry` caller so single-key typing stays single.
+2. **Protocol + room:** `?v=2` on the WebSocket; v1 tabs get the reload message and first-character
+   values. Worker integration tests for both versions.
+3. **Display:** fitted text, truncation, callout and widened clue blanks (works before anyone can
+   type a long entry, via fixtures).
+4. **Multi-letter mode:** Shift+Enter / Insert / button, the visible edit box, save and cancel rules.
+   Unit tests for the keymap, component tests for the mode, and an e2e check that two solvers see a
+   saved multi-letter entry.
 
 ## F7. Undo and Redo
 
