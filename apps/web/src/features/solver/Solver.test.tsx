@@ -180,6 +180,70 @@ describe('Solver', () => {
       expect(square(1)).toHaveAccessibleName('Square 1, clue A, ね');
     });
 
+    describe('Android keyboards that compose every word (Samsung, Gboard)', () => {
+      // These keyboards report each letter as composition text and may not end
+      // the composition until a space or blur, if ever.
+      const composeTo = (entry: HTMLElement, text: string) => {
+        const field = entry as HTMLInputElement;
+        fireEvent(
+          entry,
+          new InputEvent('beforeinput', {
+            inputType: 'insertCompositionText',
+            data: text,
+            isComposing: true,
+          }),
+        );
+        field.value = `\u200b${text}`;
+        fireEvent(
+          entry,
+          new InputEvent('input', {
+            inputType: 'insertCompositionText',
+            data: text,
+            isComposing: true,
+          }),
+        );
+      };
+
+      it('types letters as they are composed, without waiting for the composition to end', async () => {
+        const { user, entry } = setup();
+        await user.click(square(1));
+        fireEvent.compositionStart(entry);
+        composeTo(entry, 'h');
+        expect(square(1)).toHaveAccessibleName('Square 1, clue A, h');
+        composeTo(entry, 'hi');
+        expect(square(2)).toHaveAccessibleName('Square 2, clue B, i');
+        expect(square(3)).toHaveAttribute('aria-selected', 'true');
+      });
+
+      it('takes a letter back on Backspace while composing', async () => {
+        const { user, entry } = setup();
+        await user.click(square(1));
+        composeTo(entry, 'hi');
+        composeTo(entry, 'h');
+        expect(square(2)).toHaveAccessibleName('Square 2, clue B, empty');
+        expect(square(2)).toHaveAttribute('aria-selected', 'true');
+      });
+
+      it('does not type the word again when the composition finally ends', async () => {
+        const { user, entry } = setup();
+        await user.click(square(1));
+        composeTo(entry, 'hi');
+        fireEvent.compositionEnd(entry, { data: 'hi' });
+        expect(square(3)).toHaveAccessibleName('Square 3, clue A, empty');
+        expect(square(3)).toHaveAttribute('aria-selected', 'true');
+      });
+
+      it('starts afresh at a newly tapped square', async () => {
+        const { user, entry } = setup();
+        await user.click(square(1));
+        composeTo(entry, 'h');
+        await user.click(square(4));
+        composeTo(entry, 'x');
+        expect(square(1)).toHaveAccessibleName('Square 1, clue A, h');
+        expect(square(4)).toHaveAccessibleName('Square 4, clue B, x');
+      });
+    });
+
     it('erases on a phone Backspace (deleteContentBackward) and clears on Delete', async () => {
       const { user, entry } = setup();
       await user.click(square(1));

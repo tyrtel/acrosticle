@@ -79,7 +79,13 @@ for the current visit to a room (not across reloads). Redo is included.
 
 **Done (2026-11-10):** typing now goes through one hidden text input placed on the selected square.
 Tapping a square focuses it (phones open their keyboard), and text arrives as input events, covering
-on-screen keyboards, swipe typing, dead keys and IMEs. Original notes:
+on-screen keyboards, swipe typing, dead keys and IMEs.
+
+**Fixed (2026-11-12):** Samsung and other Android keyboards compose every word, even plain letters, and
+may never end the composition, so letters never arrived. The solver now types composing text as it
+changes (see `apps/web/src/features/solver/composition.ts`), which also shows IME text live.
+
+Original notes:
 
 Found while testing F3: the solver listens for key presses, so text that arrives without them is
 skipped. That covers accents composed with dead keys (´ then e), input methods (IMEs) for languages

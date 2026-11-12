@@ -26,6 +26,7 @@ import {
 import type { PeerMap } from '../../components/PeerTag';
 import { AcrosticBar } from './AcrosticBar';
 import { ClueList } from './ClueList';
+import { startComposition, syncComposition, type Composition } from './composition';
 import { clueBlankId, gridSquareId } from './elementIds';
 import { Grid } from './Grid';
 import { keyToAction, type KeyAction } from './keymap';
@@ -77,6 +78,23 @@ export function Solver({
 
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Text the keyboard is still composing, already typed into the squares.
+  const compositionRef = useRef<Composition | null>(null);
+
+  /** Empties the hidden input (bar the sentinel), keeping the caret at the end. */
+  const resetInput = useCallback(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.value = SENTINEL;
+    input.setSelectionRange(SENTINEL.length, SENTINEL.length);
+  }, []);
+
+  /** Stops treating the keyboard's composing text as live, e.g. when the cursor jumps. */
+  const endComposition = useCallback(() => {
+    if (!compositionRef.current) return;
+    compositionRef.current = null;
+    resetInput();
+  }, [resetInput]);
 
   /** Sends your edit to the room and records it for Undo. */
   const emit = useCallback(
@@ -90,6 +108,7 @@ export function Solver({
   /** Undo or redo one of your edits, moving the cursor to the square it changed. */
   const step = useCallback(
     (which: 'undo' | 'redo') => {
+      endComposition();
       const result = (which === 'undo' ? undo : redo)(history, solve);
       setHistory(result.history);
       const { edit } = result;
@@ -97,11 +116,12 @@ export function Solver({
       onEdit(edit);
       setSelection((current) => ({ ...current, cell: edit.cell }));
     },
-    [history, solve, onEdit],
+    [history, solve, onEdit, endComposition],
   );
 
   const apply = useCallback(
     (action: KeyAction) => {
+      endComposition();
       if (action.type === 'undo' || action.type === 'redo') {
         step(action.type);
         return;
@@ -110,7 +130,7 @@ export function Solver({
       setSelection(result.selection);
       if (result.edit) emit(result.edit, solve);
     },
-    [index, solve, selection, emit, step],
+    [index, solve, selection, emit, step, endComposition],
   );
 
   /** Types each entry in turn, advancing like separate key presses. */
@@ -131,21 +151,33 @@ export function Solver({
     [index, solve, selection, emit],
   );
 
+  /** Shows the keyboard's latest composing text in the squares. */
+  const compose = useCallback(
+    (text: string) => {
+      const composition = compositionRef.current ?? startComposition(selection);
+      const result = syncComposition(index, solve, composition, text);
+      let state = solve;
+      for (const edit of result.edits) {
+        emit(edit, state);
+        state = applyEdit(state, edit);
+      }
+      compositionRef.current = result.composition;
+      setSelection(result.selection);
+    },
+    [index, solve, selection, emit],
+  );
+
   // Native listeners: React's onBeforeInput doesn't expose inputType (needed for deletes).
-  const latest = useRef({ apply, typeText });
+  const latest = useRef({ apply, typeText, compose });
   useEffect(() => {
-    latest.current = { apply, typeText };
-  }, [apply, typeText]);
+    latest.current = { apply, typeText, compose };
+  }, [apply, typeText, compose]);
 
   useEffect(() => {
     const input = inputRef.current;
     if (!input) return;
-    const reset = () => {
-      input.value = SENTINEL;
-      input.setSelectionRange(SENTINEL.length, SENTINEL.length);
-    };
     const onBeforeInput = (event: InputEvent) => {
-      if (event.isComposing) return; // the IME is still composing; wait for compositionend
+      if (event.isComposing) return; // composing text is handled on input (below)
       if (event.inputType === 'historyUndo' || event.inputType === 'historyRedo') {
         // e.g. an Edit menu or shake-to-undo
         event.preventDefault();
@@ -160,20 +192,31 @@ export function Solver({
         latest.current.typeText(event.data);
       }
     };
-    const onCompositionEnd = (event: CompositionEvent) => {
-      latest.current.typeText(event.data);
-      queueMicrotask(reset);
+    // Composing text is typed as it changes, not when composing ends: Android
+    // keyboards compose every word, even plain letters, and may never end. The
+    // input keeps the composing text until then, so the keyboard stays in step.
+    const onInput = (event: Event) => {
+      if (event instanceof InputEvent && event.isComposing) {
+        latest.current.compose(input.value.replace(SENTINEL, ''));
+      } else {
+        resetInput();
+      }
     };
-    reset();
+    const onCompositionEnd = (event: CompositionEvent) => {
+      latest.current.compose(event.data);
+      compositionRef.current = null;
+      queueMicrotask(resetInput);
+    };
+    resetInput();
     input.addEventListener('beforeinput', onBeforeInput);
     input.addEventListener('compositionend', onCompositionEnd);
-    input.addEventListener('input', reset);
+    input.addEventListener('input', onInput);
     return () => {
       input.removeEventListener('beforeinput', onBeforeInput);
       input.removeEventListener('compositionend', onCompositionEnd);
-      input.removeEventListener('input', reset);
+      input.removeEventListener('input', onInput);
     };
-  }, []);
+  }, [resetInput]);
 
   // Keep the selected square visible, and the hidden input on top of it (so phones
   // scroll to it and IME suggestion windows appear next to it).
@@ -213,10 +256,14 @@ export function Solver({
     apply(action);
   };
 
-  const select = useCallback((cell: CellNumber, view: 'grid' | 'clue') => {
-    setSelection({ cell, view });
-    inputRef.current?.focus({ preventScroll: true });
-  }, []);
+  const select = useCallback(
+    (cell: CellNumber, view: 'grid' | 'clue') => {
+      endComposition();
+      setSelection({ cell, view });
+      inputRef.current?.focus({ preventScroll: true });
+    },
+    [endComposition],
+  );
   const selectInGrid = useCallback((cell: CellNumber) => select(cell, 'grid'), [select]);
   const selectInClues = useCallback((cell: CellNumber) => select(cell, 'clue'), [select]);
 
