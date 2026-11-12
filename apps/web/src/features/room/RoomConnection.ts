@@ -1,6 +1,8 @@
 import {
   encodeMessage,
   parseServerMessage,
+  PROTOCOL_VERSION,
+  PROTOCOL_VERSION_PARAM,
   type ClientMessage,
   type ServerMessage,
 } from '@acrosticle/protocol';
@@ -115,11 +117,11 @@ export class RoomConnection {
   }
 }
 
-/** The WebSocket URL for a room, relative to the current page's host. */
+/** The WebSocket URL for a room, relative to the current page's host, announcing our protocol version. */
 export function roomSocketUrl(
   roomId: string,
   location: Pick<Location, 'protocol' | 'host'>,
 ): string {
   const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
-  return `${scheme}://${location.host}/api/rooms/${roomId}/ws`;
+  return `${scheme}://${location.host}/api/rooms/${roomId}/ws?${PROTOCOL_VERSION_PARAM}=${PROTOCOL_VERSION}`;
 }

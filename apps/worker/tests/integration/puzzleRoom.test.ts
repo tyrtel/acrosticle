@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_ENTRY_LENGTH } from '@acrosticle/core';
+import { OUTDATED_CLIENT_MESSAGE } from '@acrosticle/protocol';
 import { createRoom, TestClient, tinyPuzzleFile } from '../support/rooms';
 
 describe('PuzzleRoom', () => {
@@ -146,5 +148,59 @@ describe('PuzzleRoom', () => {
     client.ws.send('{"type":"cell/set","cell":-1}');
     expect((await client.next()).type).toBe('error');
     client.close();
+  });
+
+  describe('multi-character entries and protocol versions (ADR 0005)', () => {
+    it('saves and shares multi-character entries, and rejects over-long ones', async () => {
+      const roomId = await createRoom();
+      const { client } = await TestClient.join(roomId);
+      client.send({ type: 'cell/set', cell: 2, value: 'E or I', clientSeq: 1 });
+      expect(await client.next('cell/updated')).toMatchObject({ cell: 2, value: 'E or I' });
+      client.send({
+        type: 'cell/set',
+        cell: 3,
+        value: 'A'.repeat(MAX_ENTRY_LENGTH + 1),
+        clientSeq: 2,
+      });
+      expect((await client.next()).type).toBe('error');
+      client.close();
+
+      const { client: later, snapshot } = await TestClient.join(roomId, 'Later');
+      expect(snapshot.cells).toEqual([[2, 'E or I']]);
+      later.close();
+    });
+
+    it('tells a tab from before versions to reload, and sends it first characters only', async () => {
+      const roomId = await createRoom();
+      const { client: current } = await TestClient.join(roomId, 'Current');
+      current.send({ type: 'cell/set', cell: 1, value: 'THE', clientSeq: 1 });
+      await current.next('cell/updated');
+
+      const { client: stale, snapshot } = await TestClient.join(roomId, 'Stale', undefined, null);
+      expect(snapshot.cells).toEqual([[1, 'T']]);
+      expect(await stale.next('error')).toEqual({
+        type: 'error',
+        message: OUTDATED_CLIENT_MESSAGE,
+      });
+      await current.next('member/joined');
+
+      current.send({ type: 'cell/set', cell: 2, value: 'E or I', clientSeq: 2 });
+      expect(await current.next('cell/updated')).toMatchObject({ value: 'E or I' });
+      expect(await stale.next('cell/updated')).toMatchObject({ value: 'E' });
+
+      // The stale tab can still solve with single characters.
+      stale.send({ type: 'cell/set', cell: 4, value: 'Q', clientSeq: 1 });
+      expect(await current.next('cell/updated')).toMatchObject({ cell: 4, value: 'Q' });
+      current.close();
+      stale.close();
+    });
+
+    it('does not tell a current client to reload', async () => {
+      const roomId = await createRoom();
+      const { client } = await TestClient.join(roomId);
+      client.send({ type: 'ping' });
+      expect((await client.next()).type).toBe('pong');
+      client.close();
+    });
   });
 });

@@ -67,7 +67,7 @@ export class FakeBackend {
       class extends FakeSocket {
         constructor(url: string) {
           super(url);
-          const roomId = /\/api\/rooms\/([^/]+)\/ws$/.exec(url)?.[1] ?? '';
+          const roomId = /\/api\/rooms\/([^/]+)\/ws(?:\?|$)/.exec(url)?.[1] ?? '';
           rooms.get(roomId)?.accept(this);
         }
       },

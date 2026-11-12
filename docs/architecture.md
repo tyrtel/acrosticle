@@ -35,7 +35,7 @@
 | `GET /api/rooms/:id`            | Check a room exists before joining; `{ roomId, title }` or 404                                                                     |
 | `DELETE /api/rooms/:id`         | Delete a room for everyone (its creator only); members get `room/deleted`                                                          |
 | `POST /api/puzzles/parse`       | Read an uploaded image into a draft puzzle with Claude (allowlisted creators; per-person and daily limits)                         |
-| `GET /api/rooms/:id/ws`         | WebSocket upgrade into the room                                                                                                    |
+| `GET /api/rooms/:id/ws`         | WebSocket upgrade into the room; `?v=2` announces the client's protocol version (ADR 0005)                                         |
 | `GET /api/auth/google`          | Start Google sign-in (`?returnTo=/path`)                                                                                           |
 | `GET /api/auth/google/callback` | Google returns here; sets the session cookie                                                                                       |
 | `POST /api/auth/logout`         | End the session                                                                                                                    |
@@ -63,7 +63,8 @@ Room ids are 128 random bits (22 base64url characters). The link is the access c
 ## Real-time flow
 
 1. The page calls `GET /api/rooms/:id`, asks for a display name (remembered in `localStorage`), then opens
-   the WebSocket.
+   the WebSocket, announcing its protocol version (`PROTOCOL_VERSION` in `packages/protocol`). The room
+   adapts what it sends to older clients and tells them to reload (ADR 0005).
 2. The client sends `join`; the `PuzzleRoom` replies with a `snapshot` (puzzle, letters, version, members,
    cursors) and tells everyone else `member/joined`.
 3. Typing applies the edit locally right away (shown as _pending_) and sends `cell/set` with a client

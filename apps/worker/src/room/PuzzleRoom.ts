@@ -1,7 +1,11 @@
 import { isEntry, puzzleFromCompact, type Entry } from '@acrosticle/core';
 import {
   encodeMessage,
+  messageForVersion,
+  OUTDATED_CLIENT_MESSAGE,
   parseClientMessage,
+  PROTOCOL_VERSION,
+  protocolVersionOf,
   PuzzleFile,
   validateWith,
   type ClientMessage,
@@ -28,6 +32,8 @@ interface Attachment {
   readonly name: string | null;
   readonly color: string;
   readonly cell: number | null;
+  /** The protocol version the client announced (see protocol/versions.ts). */
+  readonly protocol: number;
 }
 
 interface RoomInfo {
@@ -112,6 +118,7 @@ export class PuzzleRoom extends DurableObject<Env> {
       name: null,
       color: '',
       cell: null,
+      protocol: protocolVersionOf(new URL(request.url)),
     };
     server.serializeAttachment(attachment);
     return new Response(null, { status: 101, webSocket: client });
@@ -178,6 +185,9 @@ export class PuzzleRoom extends DurableObject<Env> {
     ws.serializeAttachment(joined);
 
     this.send(ws, this.snapshot(joined.memberId));
+    if (joined.protocol < PROTOCOL_VERSION) {
+      this.send(ws, { type: 'error', message: OUTDATED_CLIENT_MESSAGE });
+    }
     this.broadcast({ type: 'member/joined', member: toMember(joined, name) }, ws);
   }
 
@@ -309,13 +319,21 @@ export class PuzzleRoom extends DurableObject<Env> {
   }
 
   private send(ws: WebSocket, message: ServerMessage): void {
-    ws.send(encodeMessage(message));
+    ws.send(encodeMessage(messageForVersion(message, attachmentOf(ws).protocol)));
   }
 
-  /** Sends to every joined member, optionally skipping one socket. */
+  /** Sends to every joined member, optionally skipping one socket, in each one's protocol version. */
   private broadcast(message: ServerMessage, except?: WebSocket): void {
-    const payload = encodeMessage(message);
-    for (const { ws } of this.joinedAttachments(except)) ws.send(payload);
+    const payloads = new Map<number, string>();
+    for (const { ws, attachment } of this.joinedAttachments(except)) {
+      const { protocol } = attachment;
+      let payload = payloads.get(protocol);
+      if (payload === undefined) {
+        payload = encodeMessage(messageForVersion(message, protocol));
+        payloads.set(protocol, payload);
+      }
+      ws.send(payload);
+    }
   }
 
   private readMeta(key: string): string | null {
@@ -335,7 +353,11 @@ export class PuzzleRoom extends DurableObject<Env> {
 }
 
 function attachmentOf(ws: WebSocket): Attachment {
-  return ws.deserializeAttachment() as Attachment;
+  const attachment = ws.deserializeAttachment() as Omit<Attachment, 'protocol'> & {
+    protocol?: number;
+  };
+  // Sockets accepted before versioning have no protocol: they're version 1 clients.
+  return { ...attachment, protocol: attachment.protocol ?? 1 };
 }
 
 function toMember(attachment: Attachment, name: string): Member {

@@ -1,4 +1,10 @@
-import { parseServerMessage, type PuzzleFile, type ServerMessage } from '@acrosticle/protocol';
+import {
+  parseServerMessage,
+  PROTOCOL_VERSION,
+  PROTOCOL_VERSION_PARAM,
+  type PuzzleFile,
+  type ServerMessage,
+} from '@acrosticle/protocol';
 import { exports } from 'cloudflare:workers';
 import { expect } from 'vitest';
 import { signInAs } from './accounts';
@@ -59,8 +65,17 @@ export class TestClient {
   /** Resolves with the close code when the server closes the connection. */
   readonly closed: Promise<number>;
 
-  static async connect(roomId: string, cookie?: string): Promise<TestClient> {
-    const res = await exports.default.fetch(`${BASE}/api/rooms/${roomId}/ws`, {
+  /**
+   * Connects, announcing `protocol` (default: the current version; null
+   * announces none, like a tab loaded before protocol versions existed).
+   */
+  static async connect(
+    roomId: string,
+    cookie?: string,
+    protocol: number | null = PROTOCOL_VERSION,
+  ): Promise<TestClient> {
+    const query = protocol === null ? '' : `?${PROTOCOL_VERSION_PARAM}=${protocol}`;
+    const res = await exports.default.fetch(`${BASE}/api/rooms/${roomId}/ws${query}`, {
       headers: { Upgrade: 'websocket', ...(cookie ? { Cookie: cookie } : {}) },
     });
     expect(res.status).toBe(101);
@@ -70,8 +85,13 @@ export class TestClient {
   }
 
   /** Connects and joins, returning the client and its snapshot. */
-  static async join(roomId: string, name = 'Ada', cookie?: string) {
-    const client = await TestClient.connect(roomId, cookie);
+  static async join(
+    roomId: string,
+    name = 'Ada',
+    cookie?: string,
+    protocol: number | null = PROTOCOL_VERSION,
+  ) {
+    const client = await TestClient.connect(roomId, cookie, protocol);
     client.send({ type: 'join', name });
     const snapshot = await client.next('snapshot');
     return { client, snapshot };
