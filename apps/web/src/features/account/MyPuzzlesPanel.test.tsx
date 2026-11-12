@@ -58,6 +58,33 @@ describe('MyPuzzlesPanel', () => {
     expect(within(items[0]!).queryByRole('button', { name: /Delete/ })).toBeNull();
   });
 
+  it('shows when each puzzle was created, so same-titled puzzles can be told apart', async () => {
+    backend.signIn();
+    const created = [Date.UTC(2026, 10, 10, 15, 42), Date.UTC(2026, 10, 11, 9, 5)];
+    for (const [i, createdAt] of created.entries()) {
+      const roomId = `Same${i}`.padEnd(22, '0');
+      backend.addRoom(tiny, roomId);
+      backend.myRooms.push({
+        roomId,
+        title: 'Tiny',
+        createdAt,
+        updatedAt: createdAt,
+        createdByMe: true,
+      });
+    }
+    const { panel } = setup();
+
+    const items = await within(panel).findAllByRole('listitem');
+    // Newest activity first, so the later one is listed first.
+    const createdTimes = items.map((item) => item.querySelector('time'));
+    expect(createdTimes.map((time) => time?.getAttribute('datetime'))).toEqual(
+      [...created].reverse().map((t) => new Date(t).toISOString()),
+    );
+    const labels = createdTimes.map((time) => time?.textContent);
+    expect(labels.every((label) => label?.startsWith('Created '))).toBe(true);
+    expect(new Set(labels).size).toBe(2);
+  });
+
   it('copies a puzzle link', async () => {
     backend.signIn();
     addMine('Room0000000000000000AB', 'Mine', Date.now());

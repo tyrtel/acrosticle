@@ -2,6 +2,7 @@ import type { MyRoomsResponse } from '@acrosticle/protocol';
 import { roomPath } from '@acrosticle/protocol';
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Link } from '../../components/Link';
+import { shortDateTime } from '../../lib/dateTime';
 import { relativeTime } from '../../lib/relativeTime';
 import { deleteRoom, fetchMyRooms } from './accountApi';
 import { SignInButton } from './AccountBar';
@@ -166,6 +167,10 @@ function RoomItem({ room, onOpen, onDeleted }: RoomItemProps) {
         )}
       </div>
       <p className={styles.meta}>
+        <time dateTime={new Date(room.createdAt).toISOString()}>
+          Created {shortDateTime(room.createdAt)}
+        </time>
+        {' · '}
         <time dateTime={new Date(room.updatedAt).toISOString()}>
           Active {relativeTime(room.updatedAt)}
         </time>

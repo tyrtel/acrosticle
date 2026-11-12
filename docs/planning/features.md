@@ -101,8 +101,8 @@ every remaining error flagged and fixable in one click. Details in [parse-eval.m
 
 ## Also queued
 
-- **Tell same-titled puzzles apart** in My puzzles (e.g. show when each was created, or a short id):
-  rooms made from the same puzzle currently look identical in the list.
+- ✅ **Tell same-titled puzzles apart** in My puzzles (done 2026-11-12): each puzzle shows when it was
+  created ("Created Nov 10, 3:42 PM · Active 5 minutes ago"); the year appears for older ones.
 
 - **Rate limiting** anonymous sample-room creation (still queued: M5 added limits for image parsing only).
 - **Automatic deploys from GitHub**: maybe later. Deploys stay manual (`npm run deploy`) for now.
