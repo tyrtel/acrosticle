@@ -1,5 +1,6 @@
 import type { Grid, GridSquare } from '@acrosticle/core';
 import { memo, type CSSProperties } from 'react';
+import { EntryText } from '../EntryText';
 import { PeerTag, type Peer } from '../PeerTag';
 import styles from './PuzzleGrid.module.css';
 
@@ -67,6 +68,7 @@ export function PuzzleGrid({
                 tone={view.tone}
                 peers={view.peers}
                 title={view.title}
+                calloutPlacement={r === 0 ? 'below' : 'above'}
                 onClick={onSquareClick}
               />
             );
@@ -87,6 +89,8 @@ interface SquareProps {
   readonly tone: SquareView['tone'];
   readonly peers: readonly Peer[] | undefined;
   readonly title: string | undefined;
+  /** The top row's callouts go below, where the grid's scroll area won't clip them. */
+  readonly calloutPlacement: 'above' | 'below';
   readonly onClick: ((gridIndex: number) => void) | undefined;
 }
 
@@ -107,6 +111,7 @@ const Square = memo(function Square({
   tone,
   peers,
   title,
+  calloutPlacement,
   onClick,
 }: SquareProps) {
   const peerColor = peers?.[0]?.color;
@@ -136,7 +141,12 @@ const Square = memo(function Square({
             {square.clue}
           </span>
           <span className={styles.entry} aria-hidden="true">
-            {letter}
+            <EntryText
+              entry={letter}
+              space="square"
+              open={selected}
+              calloutPlacement={calloutPlacement}
+            />
           </span>
         </>
       )}

@@ -94,12 +94,14 @@ previous entry in one step. Other solvers see the entry only once it's saved.
 
 ### Display: keeping long entries readable
 
-| Entry length | Grid square                                    |
-| ------------ | ---------------------------------------------- |
-| 1            | As today                                       |
-| 2–3          | Smaller text, one line                         |
-| 4–6          | Two lines, smaller again                       |
-| 7+           | First characters and "…", with a corner marker |
+| Entry length | Grid square                                                    |
+| ------------ | -------------------------------------------------------------- |
+| 1            | As today                                                       |
+| 2–3          | Smaller text, one line                                         |
+| 4–6          | Two lines, broken at a space when that fits ("E or" / "I")     |
+| 7+           | The first five characters and "…" on two lines ("THR" / "EE…") |
+
+The "…" marks an entry that's cut short (the square's corner already holds its number).
 
 - The **selected square shows its full entry** in a callout above it; hovering shows it too.
 - **Clue blanks** widen to fit short entries (up to about four characters' width), then truncate

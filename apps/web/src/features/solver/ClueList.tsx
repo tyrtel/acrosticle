@@ -1,6 +1,7 @@
 import type { CellNumber, Clue, ClueLabel, PuzzleIndex, SolveState } from '@acrosticle/core';
 import { getCell } from '@acrosticle/core';
 import { memo, type CSSProperties } from 'react';
+import { EntryText } from '../../components/EntryText';
 import { describePeers, PeerTag, type Peer, type PeerMap } from '../../components/PeerTag';
 import { clueBlankId } from './elementIds';
 import styles from './ClueList.module.css';
@@ -85,7 +86,12 @@ const ClueRow = memo(
                 onClick={() => onSelect(cell)}
               >
                 <span className={styles.letter} aria-hidden="true">
-                  {letter}
+                  <EntryText
+                    entry={letter}
+                    space="blank"
+                    open={selected}
+                    calloutPlacement="below"
+                  />
                 </span>
                 <span className={styles.number} aria-hidden="true">
                   {cell}

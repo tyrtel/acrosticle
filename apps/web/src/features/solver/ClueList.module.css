@@ -37,7 +37,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 2.2rem;
+  /* Widens for short multi-character entries (see EntryText). */
+  min-width: 2.2rem;
   cursor: pointer;
   user-select: none;
 }
@@ -45,6 +46,7 @@
 .letter {
   width: 100%;
   height: 1.9rem;
+  white-space: nowrap;
   border-bottom: 2px solid var(--border-strong);
   text-align: center;
   font-weight: 600;

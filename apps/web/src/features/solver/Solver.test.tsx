@@ -6,6 +6,7 @@ import {
   type CellNumber,
   type Entry,
   type Puzzle,
+  type SolveState,
 } from '@acrosticle/core';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -80,6 +81,20 @@ describe('Solver', () => {
     expect(screen.getAllByRole('gridcell', { name: 'Black square' })).toHaveLength(2);
     expect(screen.getByRole('rowheader', { name: 'A. First clue' })).toBeInTheDocument();
     expect(screen.getByText('0 / 5 squares filled')).toBeInTheDocument();
+  });
+
+  it('shows multi-character entries readably, with the full entry for assistive tech', () => {
+    const solve = { 1: 'THREESOME', 3: 'TH' } as unknown as SolveState;
+    render(<Solver puzzle={puzzle} solve={solve} onEdit={vi.fn()} />);
+
+    expect(square(1)).toHaveAccessibleName('Square 1, clue A, THREESOME');
+    expect(within(square(1)).getByText('THR EE…')).toBeInTheDocument();
+    expect(within(blank(1)).getByText('THR…')).toBeInTheDocument();
+    // Square 1 is selected at the start, so its callouts are open.
+    expect(within(square(1)).getByText('THREESOME').className).toMatch(/open/);
+    expect(within(square(3)).getByText('TH')).toBeInTheDocument();
+    // The acrostic takes only the first character of clue A's first square (3).
+    expect(screen.getByLabelText(/^First letters:/)).toHaveAccessibleName('First letters: T blank');
   });
 
   it('sizes the clue column for the longest answer', () => {
