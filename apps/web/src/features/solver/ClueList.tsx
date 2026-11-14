@@ -14,6 +14,8 @@ export interface ClueListProps {
   readonly peers: PeerMap;
   /** Typing goes to the clues: show a focus ring. */
   readonly focused: boolean;
+  /** Typing goes to the grid or the clues: show the selected blank in yellow. */
+  readonly typing: boolean;
   readonly onSelect: (cell: CellNumber) => void;
 }
 
@@ -25,13 +27,16 @@ export function ClueList({
   selectedClue,
   peers,
   focused,
+  typing,
   onSelect,
 }: ClueListProps) {
   return (
     <div
       role="grid"
       aria-label="Clues"
-      className={focused ? `${styles.list} ${styles.focused}` : styles.list}
+      className={[styles.list, focused && styles.focused, !typing && styles.idle]
+        .filter(Boolean)
+        .join(' ')}
     >
       {index.clues.map((clue) => (
         <ClueRow

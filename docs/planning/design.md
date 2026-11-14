@@ -440,8 +440,10 @@ created" are cross-room queries that per-room Durable Object storage can't answe
   current-clue bar above the grid.
 - **Grid square:** shows the number and clue label (small), plus the entered letter (large). Black squares
   are solid.
-- **Highlights:** the selected square, the current word (the run between blocks), and the matching clue
-  blank. Other users' selections appear in their colours.
+- **Highlights:** the selected square and its clue blank are yellow, but only while typing is active
+  (the grid or clues have focus), so yellow always means "keys go here". The current clue is blue. In
+  the grid, blue marks the current word when typing in the grid, or the clue's squares when typing in
+  the clues. Other users' selections appear in their colours.
 - **Clue list:** clue text with a row of blanks under it. Blank numbers are shown, and filled letters
   mirror the grid.
 - **Progress:** a "filled N / 232" counter, and the first letters of the answers shown as the acrostic

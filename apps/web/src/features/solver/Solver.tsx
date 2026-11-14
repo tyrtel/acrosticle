@@ -370,10 +370,10 @@ export function Solver({
             index={index}
             solve={solve}
             selectedCell={selection.cell}
-            wordCells={context.wordCells}
-            clueCells={context.clueCells}
+            highlightCells={selection.view === 'grid' ? context.wordCells : context.clueCells}
             peers={peers}
             focused={focused && selection.view === 'grid'}
+            typing={focused}
             onSelect={selectInGrid}
           />
           <p className={styles.hint}>
@@ -389,6 +389,7 @@ export function Solver({
             selectedClue={context.clue}
             peers={peers}
             focused={focused && selection.view === 'clue'}
+            typing={focused}
             onSelect={selectInClues}
           />
         </div>

@@ -15,7 +15,7 @@
 }
 
 .current {
-  background: var(--clue);
+  background: var(--word);
 }
 
 .text {
@@ -54,7 +54,8 @@
   line-height: 1.9rem;
 }
 
-.selected .letter {
+/* Only while typing; the blank stays selected for assistive tech. */
+.list:not(.idle) .selected .letter {
   background: var(--select);
 }
 

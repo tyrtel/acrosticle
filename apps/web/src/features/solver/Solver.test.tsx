@@ -516,6 +516,37 @@ describe('Solver', () => {
     expect(rows[0]?.className).not.toMatch(/current/);
   });
 
+  it("tints the word when typing in the grid, and the clue's squares when typing in the clues", async () => {
+    const tinted = () => [1, 2, 3, 4, 5].filter((n) => /\bword\b|_word_/.test(square(n).className));
+    const { user } = setup();
+    // Square 1 is in the word 1-2 and in clue A (3, 1, 5).
+    await user.click(square(1));
+    expect(tinted()).toEqual([1, 2]);
+
+    await user.keyboard('{Enter}');
+    expect(tinted()).toEqual([1, 3, 5]);
+  });
+
+  it('shows the yellow selection only while typing, keeping the square selected', async () => {
+    const { user, grid, clues, entry } = setup();
+    expect(grid.className).toMatch(/idle/);
+    expect(clues.className).toMatch(/idle/);
+
+    await user.click(square(2));
+    expect(grid.className).not.toMatch(/idle/);
+    expect(clues.className).not.toMatch(/idle/);
+
+    await user.keyboard('{Enter}');
+    expect(grid.className).not.toMatch(/idle/);
+    expect(clues.className).not.toMatch(/idle/);
+
+    entry.blur();
+    await vi.waitFor(() => expect(grid.className).toMatch(/idle/));
+    expect(clues.className).toMatch(/idle/);
+    expect(square(2)).toHaveAttribute('aria-selected', 'true');
+    expect(blank(2)).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('reports each edit, and nothing for plain cursor moves', async () => {
     const onEdit = vi.fn();
     const { user } = setup({ onEdit });

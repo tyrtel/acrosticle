@@ -4,13 +4,13 @@ import { EntryText } from '../EntryText';
 import { PeerTag, type Peer } from '../PeerTag';
 import styles from './PuzzleGrid.module.css';
 
-/** How one square should look. Highlight tones are mutually exclusive; `selected` wins. */
+/** How one square should look. Highlight tones are mutually exclusive; `selected` wins while shown. */
 export interface SquareView {
   readonly ariaLabel: string;
   readonly id?: string | undefined;
   readonly letter?: string | null | undefined;
   readonly selected?: boolean | undefined;
-  readonly tone?: 'word' | 'clue' | 'error' | 'warning' | 'info' | undefined;
+  readonly tone?: 'word' | 'error' | 'warning' | 'info' | undefined;
   /** Other solvers whose cursor is here: outlined in the first one's color, tagged on hover. */
   readonly peers?: readonly Peer[] | undefined;
   /** Native tooltip text. */
@@ -25,6 +25,11 @@ export interface PuzzleGridProps {
   readonly onSquareClick?: ((gridIndex: number) => void) | undefined;
   /** Draw a focus ring (typing goes to this grid). */
   readonly showFocus?: boolean | undefined;
+  /**
+   * Color the selected square. Off while it isn't taking input, so the color
+   * means "typing goes here"; the square stays selected for assistive tech.
+   */
+  readonly showSelection?: boolean | undefined;
 }
 
 /**
@@ -38,6 +43,7 @@ export function PuzzleGrid({
   viewSquare,
   onSquareClick,
   showFocus = false,
+  showSelection = true,
 }: PuzzleGridProps) {
   const rows: { square: GridSquare; gridIndex: number }[][] = [];
   grid.squares.forEach((square, gridIndex) => {
@@ -49,7 +55,9 @@ export function PuzzleGrid({
     <div
       role="grid"
       aria-label={label}
-      className={showFocus ? `${styles.grid} ${styles.focused}` : styles.grid}
+      className={[styles.grid, showFocus && styles.focused, !showSelection && styles.idle]
+        .filter(Boolean)
+        .join(' ')}
       style={{ '--columns': grid.columns } as CSSProperties}
     >
       {rows.map((row, r) => (

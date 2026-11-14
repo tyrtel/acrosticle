@@ -9,11 +9,13 @@ export interface GridProps {
   readonly index: PuzzleIndex;
   readonly solve: SolveState;
   readonly selectedCell: CellNumber;
-  readonly wordCells: readonly CellNumber[];
-  readonly clueCells: readonly CellNumber[];
+  /** Squares tinted blue: the word when typing in the grid, the clue's squares when in the clues. */
+  readonly highlightCells: readonly CellNumber[];
   readonly peers: PeerMap;
   /** Typing goes to the grid: show a focus ring. */
   readonly focused: boolean;
+  /** Typing goes to the grid or the clues: show the selected square in yellow. */
+  readonly typing: boolean;
   readonly onSelect: (cell: CellNumber) => void;
 }
 
@@ -22,14 +24,13 @@ export function Grid({
   index,
   solve,
   selectedCell,
-  wordCells,
-  clueCells,
+  highlightCells,
   peers,
   focused,
+  typing,
   onSelect,
 }: GridProps) {
-  const inWord = new Set(wordCells);
-  const inClue = new Set(clueCells);
+  const highlighted = new Set(highlightCells);
 
   const viewSquare = (square: GridSquare): SquareView => {
     switch (square.kind) {
@@ -47,7 +48,7 @@ export function Grid({
           title: who,
           letter,
           selected: square.number === selectedCell,
-          tone: inWord.has(square.number) ? 'word' : inClue.has(square.number) ? 'clue' : undefined,
+          tone: highlighted.has(square.number) ? 'word' : undefined,
           peers: here,
         };
       }
@@ -70,6 +71,7 @@ export function Grid({
       viewSquare={viewSquare}
       onSquareClick={onSquareClick}
       showFocus={focused}
+      showSelection={typing}
     />
   );
 }
