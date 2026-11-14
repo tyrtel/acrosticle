@@ -378,7 +378,7 @@ export function Solver({
           />
           <p className={styles.hint}>
             Tap or click a square to type · Arrows move · Tab next clue · Enter switches between
-            grid and clues
+            grid and clues · Shift+Enter or Insert for multiple chars
           </p>
         </div>
         <div className={styles.cluePane}>

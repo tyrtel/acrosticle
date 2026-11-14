@@ -287,6 +287,11 @@ describe('Solver', () => {
   describe('multi-letter mode', () => {
     const editBox = () => screen.getByRole('textbox', { name: 'Multi-letter entry' });
 
+    it('mentions the shortcuts in the hint under the grid', () => {
+      setup();
+      expect(screen.getByText(/Shift\+Enter or Insert for multiple chars/)).toBeInTheDocument();
+    });
+
     it('Shift+Enter opens an edit box; Enter saves the whole entry as one edit and advances', async () => {
       const onEdit = vi.fn();
       const { user } = setup({ onEdit });
