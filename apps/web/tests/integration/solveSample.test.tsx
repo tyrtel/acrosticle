@@ -21,7 +21,7 @@ describe('solving the sample puzzle', () => {
   it("can't be started by a guest", async () => {
     render(<App />);
     expect(await screen.findByRole('button', { name: 'Try the sample puzzle' })).toBeDisabled();
-    expect(screen.getByText(/Sign in with an invited account/)).toBeInTheDocument();
+    expect(await screen.findByText(/Sign in with an invited account/)).toBeInTheDocument();
   });
 
   it('creates a room for the sample, joins it, and solves across both views', async () => {
