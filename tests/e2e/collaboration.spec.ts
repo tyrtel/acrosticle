@@ -74,3 +74,36 @@ test('a multi-letter entry reaches everyone in the room', async ({ browser, isMo
   await expect(bo.getByRole('gridcell', { name: 'Square 3, clue P, E or I' })).toBeVisible();
   await expect(square(bo, 3)).toContainText('E or');
 });
+
+test('a highlight reaches everyone in the room and stays after reloading', async ({
+  browser,
+  isMobile,
+}) => {
+  const ada = await (await browser.newContext()).newPage();
+  const bo = await (await browser.newContext()).newPage();
+  const roomUrl = await startSampleRoom(ada, 'Ada');
+  await bo.goto(roomUrl);
+  await join(bo, 'Bo');
+
+  await square(ada, 3).click();
+  if (isMobile) {
+    await ada.getByRole('button', { name: 'Highlight' }).click();
+  } else {
+    // Desktop browsers let pages use Ctrl+H (Google Docs does too).
+    await ada.keyboard.press('Control+h');
+  }
+  const highlighted = 'Square 3, clue P, empty, highlighted';
+  await expect(bo.getByRole('gridcell', { name: highlighted })).toBeVisible();
+
+  await bo.reload();
+  await expect(bo.getByRole('gridcell', { name: highlighted })).toBeVisible();
+
+  // Bo removes it with Ctrl+click (the button on phones).
+  if (isMobile) {
+    await square(bo, 3).click();
+    await bo.getByRole('button', { name: 'Highlight' }).click();
+  } else {
+    await square(bo, 3).click({ modifiers: ['Control'] });
+  }
+  await expect(ada.getByRole('gridcell', { name: 'Square 3, clue P, empty' })).toBeVisible();
+});

@@ -4,9 +4,10 @@ import type { ServerMessage } from './messages';
 /**
  * The room protocol version this code speaks, announced by the client in the
  * WebSocket URL. History: 1 = one character per square (tabs from before
- * versioning send no version); 2 = multi-character entries (ADR 0005).
+ * versioning send no version); 2 = multi-character entries (ADR 0005);
+ * 3 = highlighted squares (`cell/marked`, snapshot `marks`).
  */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /** The query parameter carrying the client's protocol version. */
 export const PROTOCOL_VERSION_PARAM = 'v';
@@ -21,11 +22,14 @@ export function protocolVersionOf(url: URL): number {
 }
 
 /**
- * A server message as a client speaking `version` can read it. Version 1
- * clients reject a whole message containing a multi-character entry, so they
- * get only each entry's first character.
+ * A server message as a client speaking `version` can read it, or null if it
+ * has nothing that client understands. Version 1 clients reject a whole
+ * message containing a multi-character entry, so they get only each entry's
+ * first character. Clients before version 3 don't know highlights; they skip
+ * the unknown snapshot field but would reject `cell/marked`.
  */
-export function messageForVersion(message: ServerMessage, version: number): ServerMessage {
+export function messageForVersion(message: ServerMessage, version: number): ServerMessage | null {
+  if (message.type === 'cell/marked' && version < 3) return null;
   if (version >= 2) return message;
   if (message.type === 'snapshot') {
     return {

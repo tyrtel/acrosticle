@@ -150,6 +150,60 @@ describe('PuzzleRoom', () => {
     client.close();
   });
 
+  describe('highlights', () => {
+    it('shares a highlight with everyone and saves it for later visitors', async () => {
+      const roomId = await createRoom();
+      const { client: ada } = await TestClient.join(roomId, 'Ada');
+      const { client: bo, snapshot: first } = await TestClient.join(roomId, 'Bo');
+      expect(first.marks).toEqual([]);
+      await ada.next('member/joined');
+
+      ada.send({ type: 'cell/mark', cell: 3, marked: true, clientSeq: 1 });
+      const marked = await ada.next('cell/marked');
+      expect(marked).toMatchObject({ cell: 3, marked: true, clientSeq: 1 });
+      expect(await bo.next('cell/marked')).toEqual(marked);
+
+      const { client: later, snapshot } = await TestClient.join(roomId, 'Later');
+      expect(snapshot.marks).toEqual([3]);
+      // Highlights aren't edits: the room version is unchanged.
+      expect(snapshot.version).toBe(0);
+
+      bo.send({ type: 'cell/mark', cell: 3, marked: false, clientSeq: 1 });
+      expect(await later.next('cell/marked')).toMatchObject({ cell: 3, marked: false });
+      ada.close();
+      bo.close();
+      later.close();
+
+      const { client: last, snapshot: after } = await TestClient.join(roomId, 'Last');
+      expect(after.marks).toEqual([]);
+      last.close();
+    });
+
+    it('rejects a highlight on a square that does not exist', async () => {
+      const roomId = await createRoom();
+      const { client } = await TestClient.join(roomId);
+      client.send({ type: 'cell/mark', cell: 99, marked: true, clientSeq: 1 });
+      expect(await client.next('error')).toMatchObject({ message: 'There is no square 99.' });
+      client.close();
+    });
+
+    it("doesn't send highlights to tabs from before them", async () => {
+      const roomId = await createRoom();
+      const { client: current } = await TestClient.join(roomId, 'Current');
+      const { client: stale } = await TestClient.join(roomId, 'Stale', undefined, 2);
+      expect(await stale.next('error')).toMatchObject({ message: OUTDATED_CLIENT_MESSAGE });
+      await current.next('member/joined');
+
+      current.send({ type: 'cell/mark', cell: 1, marked: true, clientSeq: 1 });
+      await current.next('cell/marked');
+      current.send({ type: 'cell/set', cell: 2, value: 'Q', clientSeq: 2 });
+      // The stale tab's next message is the letter: the highlight was skipped.
+      expect(await stale.next('cell/updated')).toMatchObject({ cell: 2, value: 'Q' });
+      current.close();
+      stale.close();
+    });
+  });
+
   describe('multi-character entries and protocol versions (ADR 0005)', () => {
     it('saves and shares multi-character entries, and rejects over-long ones', async () => {
       const roomId = await createRoom();

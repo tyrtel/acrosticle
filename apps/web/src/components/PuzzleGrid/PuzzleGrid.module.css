@@ -64,9 +64,18 @@
   box-shadow: inset 0 0 0 3px var(--error);
 }
 
+.marked {
+  background: var(--mark);
+}
+
 /* Only while it takes input (see showSelection); otherwise its tone shows through. */
 .grid:not(.idle) .selected {
   background: var(--select);
+}
+
+/* Selected and highlighted: keep a green ring so the highlight still shows. */
+.grid:not(.idle) .selected.marked {
+  box-shadow: inset 0 0 0 3px var(--mark-ring);
 }
 
 .peer {

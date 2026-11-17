@@ -372,6 +372,8 @@ Builds on the existing `PuzzleRoom` Durable Object and [ADR 0002](../adr/0002-co
 | S→C       | `snapshot { puzzle, cells, version, members }` | Full state on join or reconnect                                        |
 | C→S       | `cell/set { cell, value, clientSeq }`          | Enter or clear a letter (already exists; add `clientSeq`)              |
 | S→C       | `cell/updated { cell, value, version, by }`    | Broadcast to **all** clients, including the sender, as acknowledgement |
+| C→S       | `cell/mark { cell, marked, clientSeq }`        | Highlight a square green, or remove it (F8)                            |
+| S→C       | `cell/marked { cell, marked, by, clientSeq }`  | Broadcast to all, like `cell/updated`; snapshot carries `marks`        |
 | C→S / S→C | `presence/update { cell \| null }`             | Selection highlighting for others                                      |
 | S→C       | `member/joined`, `member/left`                 | Roster                                                                 |
 

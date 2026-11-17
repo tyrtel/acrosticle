@@ -1,5 +1,5 @@
 import type { Grid, GridSquare } from '@acrosticle/core';
-import { memo, type CSSProperties } from 'react';
+import { memo, type CSSProperties, type MouseEvent } from 'react';
 import { EntryText } from '../EntryText';
 import { PeerTag, type Peer } from '../PeerTag';
 import styles from './PuzzleGrid.module.css';
@@ -11,6 +11,8 @@ export interface SquareView {
   readonly letter?: string | null | undefined;
   readonly selected?: boolean | undefined;
   readonly tone?: 'word' | 'error' | 'warning' | 'info' | undefined;
+  /** Someone highlighted this square: drawn green, over the tone. */
+  readonly marked?: boolean | undefined;
   /** Other solvers whose cursor is here: outlined in the first one's color, tagged on hover. */
   readonly peers?: readonly Peer[] | undefined;
   /** Native tooltip text. */
@@ -22,7 +24,8 @@ export interface PuzzleGridProps {
   readonly label: string;
   /** Called for every square on each render; keep it cheap. */
   readonly viewSquare: (square: GridSquare, gridIndex: number) => SquareView;
-  readonly onSquareClick?: ((gridIndex: number) => void) | undefined;
+  /** The click event is passed for its modifier keys. */
+  readonly onSquareClick?: ((gridIndex: number, event: MouseEvent) => void) | undefined;
   /** Draw a focus ring (typing goes to this grid). */
   readonly showFocus?: boolean | undefined;
   /**
@@ -74,6 +77,7 @@ export function PuzzleGrid({
                 letter={view.letter ?? null}
                 selected={view.selected ?? false}
                 tone={view.tone}
+                marked={view.marked ?? false}
                 peers={view.peers}
                 title={view.title}
                 calloutPlacement={r === 0 ? 'below' : 'above'}
@@ -95,11 +99,12 @@ interface SquareProps {
   readonly letter: string | null;
   readonly selected: boolean;
   readonly tone: SquareView['tone'];
+  readonly marked: boolean;
   readonly peers: readonly Peer[] | undefined;
   readonly title: string | undefined;
   /** The top row's callouts go below, where the grid's scroll area won't clip them. */
   readonly calloutPlacement: 'above' | 'below';
-  readonly onClick: ((gridIndex: number) => void) | undefined;
+  readonly onClick: ((gridIndex: number, event: MouseEvent) => void) | undefined;
 }
 
 // Kind modifiers are mapped explicitly so they can't collide with inner element classes.
@@ -117,6 +122,7 @@ const Square = memo(function Square({
   letter,
   selected,
   tone,
+  marked,
   peers,
   title,
   calloutPlacement,
@@ -127,6 +133,7 @@ const Square = memo(function Square({
     styles.square,
     KIND_CLASS[square.kind],
     tone && styles[tone],
+    marked && styles.marked,
     selected && styles.selected,
     onClick && styles.clickable,
     peerColor && styles.peer,
@@ -140,7 +147,7 @@ const Square = memo(function Square({
       aria-selected={square.kind === 'letter' ? selected : undefined}
       className={classes.filter(Boolean).join(' ')}
       style={peerColor ? ({ '--peer-color': peerColor } as CSSProperties) : undefined}
-      onClick={onClick && (() => onClick(gridIndex))}
+      onClick={onClick && ((event) => onClick(gridIndex, event))}
     >
       {square.kind === 'letter' && (
         <>

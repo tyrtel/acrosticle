@@ -10,6 +10,7 @@ import { PuzzleFile } from './puzzleFile';
  * Flow: the client connects and sends `join`; the server replies with a
  * `snapshot` and then streams changes. Every accepted edit is broadcast to
  * everyone (sender included) as `cell/updated`, carrying the room version.
+ * Highlights (`cell/mark` → `cell/marked`) work the same way, without a version.
  */
 
 const cellNumber = z.number().int().positive();
@@ -41,6 +42,13 @@ export const ClientMessage = z.discriminatedUnion('type', [
     /** Client-chosen sequence number, echoed back so the sender can confirm its edit. */
     clientSeq: z.number().int().nonnegative(),
   }),
+  z.object({
+    type: z.literal('cell/mark'),
+    cell: cellNumber,
+    /** Highlight the square (true) or remove its highlight. */
+    marked: z.boolean(),
+    clientSeq: z.number().int().nonnegative(),
+  }),
   z.object({ type: z.literal('presence/update'), cell: cellNumber.nullable() }),
   z.object({ type: z.literal('ping') }),
 ]);
@@ -52,6 +60,8 @@ export const ServerMessage = z.discriminatedUnion('type', [
     puzzle: PuzzleFile,
     /** Filled cells as [cell, letter] pairs. */
     cells: z.array(z.tuple([cellNumber, entry])),
+    /** Highlighted squares. */
+    marks: z.array(cellNumber),
     version: z.number().int().nonnegative(),
     /** The receiving client's own member id. */
     you: memberId,
@@ -63,6 +73,13 @@ export const ServerMessage = z.discriminatedUnion('type', [
     cell: cellNumber,
     value: entryOrNull,
     version: z.number().int().positive(),
+    by: memberId,
+    clientSeq: z.number().int().nonnegative(),
+  }),
+  z.object({
+    type: z.literal('cell/marked'),
+    cell: cellNumber,
+    marked: z.boolean(),
     by: memberId,
     clientSeq: z.number().int().nonnegative(),
   }),

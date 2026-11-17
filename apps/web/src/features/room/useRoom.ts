@@ -1,4 +1,4 @@
-import type { CellEdit, CellNumber, SolveState } from '@acrosticle/core';
+import type { CellEdit, CellNumber, MarkEdit, Marks, SolveState } from '@acrosticle/core';
 import type { ServerMessage } from '@acrosticle/protocol';
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import type { PeerMap } from '../../components/PeerTag';
@@ -7,8 +7,10 @@ import {
   initialRoomState,
   peerCursors,
   roomReducer,
+  visibleMarks,
   visibleSolve,
   type PendingEdit,
+  type PendingMark,
   type RoomState,
 } from './roomState';
 
@@ -16,8 +18,11 @@ export interface UseRoomResult {
   readonly state: RoomState;
   /** Letters to show: confirmed by the room, plus our pending edits. */
   readonly solve: SolveState;
+  /** Highlighted squares: confirmed by the room, plus our pending changes. */
+  readonly marks: Marks;
   readonly peers: PeerMap;
   readonly setCell: (edit: CellEdit) => void;
+  readonly setMark: (mark: MarkEdit) => void;
   readonly setPresence: (cell: CellNumber | null) => void;
 }
 
@@ -31,11 +36,13 @@ export function useRoom(
   const connection = useRef<RoomConnection | null>(null);
   const nextSeq = useRef(1);
   const pending = useRef<ReadonlyMap<CellNumber, PendingEdit>>(state.pending);
+  const pendingMarks = useRef<ReadonlyMap<CellNumber, PendingMark>>(state.pendingMarks);
   const lastPresence = useRef<CellNumber | null>(null);
 
   useEffect(() => {
     pending.current = state.pending;
-  }, [state.pending]);
+    pendingMarks.current = state.pendingMarks;
+  }, [state.pending, state.pendingMarks]);
 
   useEffect(() => {
     const conn = new RoomConnection({
@@ -55,6 +62,9 @@ export function useRoom(
           // and our cursor position.
           for (const [cell, edit] of pending.current) {
             conn.send({ type: 'cell/set', cell, ...edit });
+          }
+          for (const [cell, mark] of pendingMarks.current) {
+            conn.send({ type: 'cell/mark', cell, ...mark });
           }
           if (lastPresence.current !== null) {
             conn.send({ type: 'presence/update', cell: lastPresence.current });
@@ -76,12 +86,19 @@ export function useRoom(
     connection.current?.send({ type: 'cell/set', ...edit, clientSeq });
   }, []);
 
+  const setMark = useCallback((mark: MarkEdit) => {
+    const clientSeq = nextSeq.current++;
+    dispatch({ type: 'local-mark', mark, clientSeq });
+    connection.current?.send({ type: 'cell/mark', ...mark, clientSeq });
+  }, []);
+
   const setPresence = useCallback((cell: CellNumber | null) => {
     lastPresence.current = cell;
     connection.current?.send({ type: 'presence/update', cell });
   }, []);
 
   const solve = useMemo(() => visibleSolve(state), [state]);
+  const marks = useMemo(() => visibleMarks(state), [state]);
   const peers = useMemo(() => peerCursors(state), [state]);
-  return { state, solve, peers, setCell, setPresence };
+  return { state, solve, marks, peers, setCell, setMark, setPresence };
 }

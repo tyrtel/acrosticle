@@ -35,7 +35,7 @@
 | `GET /api/rooms/:id`            | Check a room exists before joining; `{ roomId, title }` or 404                                                                     |
 | `DELETE /api/rooms/:id`         | Delete a room for everyone (its creator only); members get `room/deleted`                                                          |
 | `POST /api/puzzles/parse`       | Read an uploaded image into a draft puzzle with Claude (allowlisted creators; per-person and daily limits)                         |
-| `GET /api/rooms/:id/ws`         | WebSocket upgrade into the room; `?v=2` announces the client's protocol version (ADR 0005)                                         |
+| `GET /api/rooms/:id/ws`         | WebSocket upgrade into the room; `?v=3` announces the client's protocol version (ADR 0005)                                         |
 | `GET /api/auth/google`          | Start Google sign-in (`?returnTo=/path`)                                                                                           |
 | `GET /api/auth/google/callback` | Google returns here; sets the session cookie                                                                                       |
 | `POST /api/auth/logout`         | End the session                                                                                                                    |
@@ -73,8 +73,11 @@ Room ids are 128 random bits (22 base64url characters). The link is the access c
    broadcasts `cell/updated` to **everyone, sender included**. The sender drops its pending edit when its
    own echo arrives; everyone else just applies it. Per square, the last write wins (ADR 0002).
 5. Cursor moves are shared with `presence/update` and shown as colored outlines.
-6. If the connection drops, the client reconnects with exponential backoff (and abandons attempts that
-   hang). It re-joins, receives a fresh snapshot, and re-sends any edits still pending.
+6. Highlights work like edits: `cell/mark` (with a client sequence number) is saved and broadcast to
+   everyone as `cell/marked`, and the snapshot lists them as `marks`. They don't change the room
+   version.
+7. If the connection drops, the client reconnects with exponential backoff (and abandons attempts that
+   hang). It re-joins, receives a fresh snapshot, and re-sends any edits and highlights still pending.
 
 Idle rooms cost nothing: the WebSocket Hibernation API lets the room leave memory while keeping
 connections, and per-connection state lives in socket attachments.

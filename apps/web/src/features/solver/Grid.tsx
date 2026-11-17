@@ -1,6 +1,6 @@
-import type { CellNumber, GridSquare, PuzzleIndex, SolveState } from '@acrosticle/core';
+import type { CellNumber, GridSquare, Marks, PuzzleIndex, SolveState } from '@acrosticle/core';
 import { getCell } from '@acrosticle/core';
-import { useCallback } from 'react';
+import { useCallback, type MouseEvent } from 'react';
 import { describePeers, type PeerMap } from '../../components/PeerTag';
 import { PuzzleGrid, type SquareView } from '../../components/PuzzleGrid';
 import { gridSquareId } from './elementIds';
@@ -11,12 +11,16 @@ export interface GridProps {
   readonly selectedCell: CellNumber;
   /** Squares tinted blue: the word when typing in the grid, the clue's squares when in the clues. */
   readonly highlightCells: readonly CellNumber[];
+  /** Squares someone highlighted (green). */
+  readonly marks: Marks;
   readonly peers: PeerMap;
   /** Typing goes to the grid: show a focus ring. */
   readonly focused: boolean;
   /** Typing goes to the grid or the clues: show the selected square in yellow. */
   readonly typing: boolean;
   readonly onSelect: (cell: CellNumber) => void;
+  /** Ctrl+click (⌘+click on a Mac) toggles a square's highlight instead of selecting it. */
+  readonly onMark: (cell: CellNumber) => void;
 }
 
 /** The solver's quotation grid. Typing goes through the solver's hidden input. */
@@ -25,10 +29,12 @@ export function Grid({
   solve,
   selectedCell,
   highlightCells,
+  marks,
   peers,
   focused,
   typing,
   onSelect,
+  onMark,
 }: GridProps) {
   const highlighted = new Set(highlightCells);
 
@@ -42,13 +48,15 @@ export function Grid({
         const letter = getCell(solve, square.number);
         const here = peers.get(square.number);
         const who = here ? describePeers(here) : undefined;
+        const marked = marks.has(square.number);
         return {
           id: gridSquareId(square.number),
-          ariaLabel: `Square ${square.number}, clue ${square.clue}, ${letter ?? 'empty'}${who ? `, ${who}` : ''}`,
+          ariaLabel: `Square ${square.number}, clue ${square.clue}, ${letter ?? 'empty'}${marked ? ', highlighted' : ''}${who ? `, ${who}` : ''}`,
           title: who,
           letter,
           selected: square.number === selectedCell,
           tone: highlighted.has(square.number) ? 'word' : undefined,
+          marked,
           peers: here,
         };
       }
@@ -57,11 +65,13 @@ export function Grid({
 
   const { squares } = index.puzzle.grid;
   const onSquareClick = useCallback(
-    (gridIndex: number) => {
+    (gridIndex: number, event: MouseEvent) => {
       const square = squares[gridIndex];
-      if (square?.kind === 'letter') onSelect(square.number);
+      if (square?.kind !== 'letter') return;
+      if (event.ctrlKey || event.metaKey) onMark(square.number);
+      else onSelect(square.number);
     },
-    [squares, onSelect],
+    [squares, onSelect, onMark],
   );
 
   return (

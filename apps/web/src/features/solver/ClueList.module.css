@@ -54,9 +54,18 @@
   line-height: 1.9rem;
 }
 
+.marked .letter {
+  background: var(--mark);
+}
+
 /* Only while typing; the blank stays selected for assistive tech. */
 .list:not(.idle) .selected .letter {
   background: var(--select);
+}
+
+/* Selected and highlighted: keep a green ring so the highlight still shows. */
+.list:not(.idle) .selected.marked .letter {
+  box-shadow: inset 0 0 0 3px var(--mark-ring);
 }
 
 .number {

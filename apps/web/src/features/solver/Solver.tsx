@@ -7,11 +7,14 @@ import {
   emptyHistory,
   getCell,
   MAX_ENTRY_LENGTH,
+  noMarks,
   recordEdit,
   redo,
   undo,
   type CellEdit,
   type CellNumber,
+  type MarkEdit,
+  type Marks,
   type Puzzle,
   type PuzzleIndex,
   type SolveState,
@@ -51,6 +54,10 @@ export interface SolverProps {
   /** The letters to show. The solver doesn't own them; it reports edits instead. */
   readonly solve: SolveState;
   readonly onEdit: (edit: CellEdit) => void;
+  /** Highlighted squares (green). Like letters, the solver reports changes instead of owning them. */
+  readonly marks?: Marks;
+  /** Toggle a highlight. Without it, there's no highlighting. */
+  readonly onMark?: (mark: MarkEdit) => void;
   /** Other solvers' cursors. */
   readonly peers?: PeerMap;
   /** Called with the selected cell whenever the cursor moves. */
@@ -69,6 +76,8 @@ export function Solver({
   puzzle,
   solve,
   onEdit,
+  marks = noMarks,
+  onMark,
   peers = NO_PEERS,
   onSelectionChange,
 }: SolverProps) {
@@ -107,6 +116,17 @@ export function Solver({
     },
     [onEdit],
   );
+
+  // Read through a ref so toggleMark stays stable and highlights don't re-render every clue row.
+  const marking = useRef({ marks, onMark });
+  useEffect(() => {
+    marking.current = { marks, onMark };
+  }, [marks, onMark]);
+  /** Highlights a square for everyone, or removes its highlight. Not part of Undo. */
+  const toggleMark = useCallback((cell: CellNumber) => {
+    const { marks: current, onMark: report } = marking.current;
+    report?.({ cell, marked: !current.has(cell) });
+  }, []);
 
   /** Saves multi-letter mode's text as one edit. */
   const saveMultiLetter = useCallback(
@@ -159,11 +179,15 @@ export function Solver({
         startMultiLetter();
         return;
       }
+      if (action.type === 'mark') {
+        toggleMark(selection.cell);
+        return;
+      }
       const result = reduceSolver(index, solve, selection, action);
       setSelection(result.selection);
       if (result.edit) emit(result.edit, solve);
     },
-    [index, solve, selection, emit, step, endComposition, startMultiLetter],
+    [index, solve, selection, emit, step, endComposition, startMultiLetter, toggleMark],
   );
 
   /** Types each entry in turn, advancing like separate key presses. */
@@ -365,20 +389,25 @@ export function Solver({
             onRedo={() => step('redo')}
             multiLetter={multiLetterOn}
             onMultiLetter={() => (multiLetterOn ? finishMultiLetter(true) : startMultiLetter())}
+            marked={onMark ? marks.has(selection.cell) : null}
+            onMark={() => toggleMark(selection.cell)}
           />
           <Grid
             index={index}
             solve={solve}
             selectedCell={selection.cell}
             highlightCells={selection.view === 'grid' ? context.wordCells : context.clueCells}
+            marks={marks}
             peers={peers}
             focused={focused && selection.view === 'grid'}
             typing={focused}
             onSelect={selectInGrid}
+            onMark={toggleMark}
           />
           <p className={styles.hint}>
             Tap or click a square to type · Arrows move · Tab next clue · Enter switches between
-            grid and clues · Shift+Enter or Insert for multiple chars
+            grid and clues · Shift+Enter or Insert for multiple chars · Ctrl+H or Ctrl+click
+            highlights
           </p>
         </div>
         <div className={styles.cluePane}>
@@ -387,10 +416,12 @@ export function Solver({
             solve={solve}
             selectedCell={selection.cell}
             selectedClue={context.clue}
+            marks={marks}
             peers={peers}
             focused={focused && selection.view === 'clue'}
             typing={focused}
             onSelect={selectInClues}
+            onMark={toggleMark}
           />
         </div>
       </div>
@@ -414,9 +445,12 @@ interface EditToolsProps {
   /** Multi-letter mode is on. */
   readonly multiLetter: boolean;
   readonly onMultiLetter: () => void;
+  /** Whether the selected square is highlighted, or null when highlighting isn't available. */
+  readonly marked: boolean | null;
+  readonly onMark: () => void;
 }
 
-/** Undo, Redo and Multi-letter. They don't take focus, so typing continues after a click. */
+/** Undo, Redo, Multi-letter and Highlight. They don't take focus, so typing continues after a click. */
 function EditTools({
   canUndo,
   canRedo,
@@ -424,6 +458,8 @@ function EditTools({
   onRedo,
   multiLetter,
   onMultiLetter,
+  marked,
+  onMark,
 }: EditToolsProps) {
   const keepFocus = (event: { preventDefault: () => void }) => event.preventDefault();
   const undoKeys = IS_MAC ? '⌘Z' : 'Ctrl+Z';
@@ -464,6 +500,19 @@ function EditTools({
       >
         Multi-letter
       </button>
+      {marked !== null && (
+        <button
+          type="button"
+          className={styles.markButton}
+          onMouseDown={keepFocus}
+          onClick={onMark}
+          aria-pressed={marked}
+          title={`${marked ? 'Remove the highlight from' : 'Highlight'} this square for everyone (Ctrl+H, or ${IS_MAC ? '⌘' : 'Ctrl'}+click any square)`}
+          aria-keyshortcuts="Control+H"
+        >
+          Highlight
+        </button>
+      )}
     </div>
   );
 }

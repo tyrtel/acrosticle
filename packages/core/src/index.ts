@@ -3,6 +3,7 @@ export * from './editing';
 export * from './clueLabel';
 export * from './entries';
 export * from './history';
+export * from './marks';
 export * from './navigation';
 export * from './puzzle';
 export * from './puzzleIndex';

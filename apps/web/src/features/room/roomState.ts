@@ -1,11 +1,15 @@
 import {
   applyEdit,
   emptySolveState,
+  noMarks,
   puzzleFromCompact,
   setCell,
+  setMark,
   type CellEdit,
   type CellNumber,
   type Entry,
+  type MarkEdit,
+  type Marks,
   type Puzzle,
   type SolveState,
 } from '@acrosticle/core';
@@ -19,6 +23,12 @@ export interface PendingEdit {
   readonly clientSeq: number;
 }
 
+/** A highlight change applied locally but not yet confirmed by the room. */
+export interface PendingMark {
+  readonly marked: boolean;
+  readonly clientSeq: number;
+}
+
 export interface RoomState {
   readonly connection: ConnectionStatus;
   readonly puzzle: Puzzle | null;
@@ -26,6 +36,10 @@ export interface RoomState {
   readonly confirmed: SolveState;
   /** Our own edits still waiting for confirmation, shown on top of `confirmed`. */
   readonly pending: ReadonlyMap<CellNumber, PendingEdit>;
+  /** Highlighted squares as last confirmed by the room. */
+  readonly confirmedMarks: Marks;
+  /** Our own highlight changes still waiting for confirmation. */
+  readonly pendingMarks: ReadonlyMap<CellNumber, PendingMark>;
   readonly version: number;
   readonly me: string | null;
   readonly members: readonly Member[];
@@ -39,13 +53,16 @@ export interface RoomState {
 export type RoomEvent =
   | { readonly type: 'server'; readonly message: ServerMessage }
   | { readonly type: 'connection'; readonly status: ConnectionStatus }
-  | { readonly type: 'local-edit'; readonly edit: CellEdit; readonly clientSeq: number };
+  | { readonly type: 'local-edit'; readonly edit: CellEdit; readonly clientSeq: number }
+  | { readonly type: 'local-mark'; readonly mark: MarkEdit; readonly clientSeq: number };
 
 export const initialRoomState: RoomState = {
   connection: 'connecting',
   puzzle: null,
   confirmed: emptySolveState,
   pending: new Map(),
+  confirmedMarks: noMarks,
+  pendingMarks: new Map(),
   version: 0,
   me: null,
   members: [],
@@ -58,7 +75,7 @@ export const initialRoomState: RoomState = {
  * Client-side room state. The room is the source of truth (ADR 0002); local
  * edits show immediately as "pending" and are dropped once the room echoes
  * them back. A snapshot replaces confirmed state but keeps pending edits,
- * which the connection re-sends after reconnecting.
+ * which the connection re-sends after reconnecting. Highlights work the same way.
  */
 export function roomReducer(state: RoomState, event: RoomEvent): RoomState {
   switch (event.type) {
@@ -68,6 +85,14 @@ export function roomReducer(state: RoomState, event: RoomEvent): RoomState {
       const pending = new Map(state.pending);
       pending.set(event.edit.cell, { value: event.edit.value, clientSeq: event.clientSeq });
       return { ...state, pending };
+    }
+    case 'local-mark': {
+      const pendingMarks = new Map(state.pendingMarks);
+      pendingMarks.set(event.mark.cell, {
+        marked: event.mark.marked,
+        clientSeq: event.clientSeq,
+      });
+      return { ...state, pendingMarks };
     }
     case 'server':
       return applyServerMessage(state, event.message);
@@ -88,6 +113,7 @@ function applyServerMessage(state: RoomState, message: ServerMessage): RoomState
         // Keep the same puzzle object across reconnects so the solver doesn't reset.
         puzzle: state.puzzle ?? (converted?.ok ? converted.puzzle : null),
         confirmed,
+        confirmedMarks: new Set(message.marks),
         version: message.version,
         me: message.you,
         members: message.members,
@@ -104,6 +130,16 @@ function applyServerMessage(state: RoomState, message: ServerMessage): RoomState
       const pending = new Map(state.pending);
       pending.delete(message.cell);
       return { ...state, confirmed, pending, version: message.version };
+    }
+    case 'cell/marked': {
+      const confirmedMarks = setMark(state.confirmedMarks, message.cell, message.marked);
+      const mine = state.pendingMarks.get(message.cell);
+      if (message.by !== state.me || mine?.clientSeq !== message.clientSeq) {
+        return { ...state, confirmedMarks };
+      }
+      const pendingMarks = new Map(state.pendingMarks);
+      pendingMarks.delete(message.cell);
+      return { ...state, confirmedMarks, pendingMarks };
     }
     case 'presence': {
       if (message.member === state.me) return state;
@@ -136,6 +172,13 @@ export function visibleSolve(state: RoomState): SolveState {
   let solve = state.confirmed;
   for (const [cell, { value }] of state.pending) solve = applyEdit(solve, { cell, value });
   return solve;
+}
+
+/** The highlights to display: confirmed ones with our pending changes on top. */
+export function visibleMarks(state: RoomState): Marks {
+  let marks = state.confirmedMarks;
+  for (const [cell, { marked }] of state.pendingMarks) marks = setMark(marks, cell, marked);
+  return marks;
 }
 
 /** Other members' cursor positions: cell -> who is there, in member order. */

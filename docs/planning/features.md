@@ -4,15 +4,16 @@ Requested features after the first deploy (2026-11-10), with recommendations and
 Milestones M1–M4 are done and deployed; M5 (image parsing) and M6 (polish) are planned in
 [design.md](design.md) §10.
 
-| #   | Feature                                                     | Size   | Proposed slot                        |
-| --- | ----------------------------------------------------------- | ------ | ------------------------------------ |
-| F1  | Get back to the start screen to begin a new puzzle          | Small  | ✅ Done (2026-11-10)                 |
-| F2  | "My puzzles" as a slide-in panel, with copy link and delete | Medium | ✅ Done (2026-11-10)                 |
-| F3  | Any character in answer cells, not just A–Z                 | Medium | ✅ Done (2026-11-10)                 |
-| F4  | Light / dark theme switch                                   | Small  | ✅ Done (2026-11-10)                 |
-| F5  | Multi-character entries in a cell                           | Large  | Designed (2026-11-12), next to build |
-| F6  | Typing on phones, and with dead keys / input methods        | Medium | ✅ Done (2026-11-10)                 |
-| F7  | Undo and Redo (buttons, Ctrl/⌘+Z, Ctrl/⌘+Shift+Z, Ctrl+Y)   | Medium | ✅ Done (2026-11-10)                 |
+| #   | Feature                                                     | Size   | Proposed slot        |
+| --- | ----------------------------------------------------------- | ------ | -------------------- |
+| F1  | Get back to the start screen to begin a new puzzle          | Small  | ✅ Done (2026-11-10) |
+| F2  | "My puzzles" as a slide-in panel, with copy link and delete | Medium | ✅ Done (2026-11-10) |
+| F3  | Any character in answer cells, not just A–Z                 | Medium | ✅ Done (2026-11-10) |
+| F4  | Light / dark theme switch                                   | Small  | ✅ Done (2026-11-10) |
+| F5  | Multi-character entries in a cell                           | Large  | ✅ Done (2026-11-13) |
+| F6  | Typing on phones, and with dead keys / input methods        | Medium | ✅ Done (2026-11-10) |
+| F7  | Undo and Redo (buttons, Ctrl/⌘+Z, Ctrl/⌘+Shift+Z, Ctrl+Y)   | Medium | ✅ Done (2026-11-10) |
+| F8  | Highlight squares green, shared with the room               | Medium | ✅ Done (2026-11-17) |
 
 ## F1. Start a new puzzle from anywhere
 
@@ -126,6 +127,16 @@ The "…" marks an entry that's cut short (the square's corner already holds its
 keyboard shortcuts (Ctrl/⌘+Z; redo with Ctrl/⌘+Shift+Z or Ctrl+Y). If someone else has changed a square
 since your edit, that undo step is **skipped**, so you never erase a collaborator's work. History is kept
 for the current visit to a room (not across reloads). Redo is included.
+
+## F8. Highlighted squares
+
+**Done (2026-11-17):** anyone can highlight a square green as a solving aid; everyone in the room sees
+it, and it's saved with the room. Ctrl+H toggles the selected square, Ctrl+click (⌘+click on a Mac)
+toggles any square or blank without moving the cursor, and a Highlight button covers touch screens.
+⌘H isn't used because it hides the app on a Mac. Highlights aren't part of Undo, don't change letters
+or the acrostic, and don't bump the room version. A highlighted square that's also selected keeps a
+green ring inside the yellow. Protocol version 3 (`cell/mark` → `cell/marked`, snapshot `marks`);
+older tabs are told to reload and are sent no highlights.
 
 ## F6. Typing without key presses (was: M6, with the mobile keyboard)
 

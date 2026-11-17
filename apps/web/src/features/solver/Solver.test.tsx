@@ -1,9 +1,12 @@
 import {
   applyEdit,
   emptySolveState,
+  noMarks,
+  setMark,
   parseCompactGrid,
   type CellEdit,
   type CellNumber,
+  type MarkEdit,
   type Entry,
   type Puzzle,
   type SolveState,
@@ -45,9 +48,11 @@ const puzzle = tinyPuzzle();
 function LocalSolver(props: {
   peers?: PeerMap;
   onEdit?: (edit: CellEdit) => void;
+  onMark?: (mark: MarkEdit) => void;
   onSelectionChange?: (cell: CellNumber) => void;
 }) {
   const [solve, setSolve] = useState(emptySolveState);
+  const [marks, setMarks] = useState(noMarks);
   return (
     <Solver
       puzzle={puzzle}
@@ -55,6 +60,11 @@ function LocalSolver(props: {
       onEdit={(edit) => {
         props.onEdit?.(edit);
         setSolve((s) => applyEdit(s, edit));
+      }}
+      marks={marks}
+      onMark={(mark) => {
+        props.onMark?.(mark);
+        setMarks((m) => setMark(m, mark.cell, mark.marked));
       }}
       peers={props.peers}
       onSelectionChange={props.onSelectionChange}
@@ -403,6 +413,90 @@ describe('Solver', () => {
       fireEvent.compositionEnd(entry, { data: 'ねこ' });
       expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
       expect(square(2)).toHaveAccessibleName('Square 2, clue B, empty');
+    });
+  });
+
+  describe('highlights', () => {
+    const highlightButton = () => screen.getByRole('button', { name: 'Highlight' });
+
+    it('Ctrl+H highlights the selected square in the grid and clues, and again removes it', async () => {
+      const onMark = vi.fn();
+      const { user, entry } = setup({ onMark });
+      await user.click(square(1));
+      await user.keyboard('{Control>}h{/Control}');
+
+      expect(onMark).toHaveBeenCalledExactlyOnceWith({ cell: 1, marked: true });
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty, highlighted');
+      expect(blank(1)).toHaveAccessibleName('Clue A, letter 2 of 3, square 1, empty, highlighted');
+      expect(highlightButton()).toHaveAttribute('aria-pressed', 'true');
+      // The cursor stays put, ready to type.
+      expect(square(1)).toHaveAttribute('aria-selected', 'true');
+      expect(entry).toHaveFocus();
+
+      await user.keyboard('{Control>}h{/Control}');
+      expect(onMark).toHaveBeenLastCalledWith({ cell: 1, marked: false });
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
+      expect(highlightButton()).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it.each([
+      ['Ctrl', 'Control'],
+      ['⌘', 'Meta'],
+    ])('%s+click toggles a square or blank without moving the cursor', async (_, modifier) => {
+      const onMark = vi.fn();
+      const { user } = setup({ onMark });
+      await user.click(square(1));
+      await user.keyboard(`{${modifier}>}`);
+      await user.click(square(4));
+      await user.click(blank(5));
+      await user.keyboard(`{/${modifier}}`);
+
+      expect(onMark.mock.calls).toEqual([[{ cell: 4, marked: true }], [{ cell: 5, marked: true }]]);
+      expect(square(4)).toHaveAccessibleName('Square 4, clue B, empty, highlighted');
+      expect(square(5)).toHaveAccessibleName('Square 5, clue A, empty, highlighted');
+      expect(square(1)).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('the Highlight button toggles the selected square and keeps typing focus', async () => {
+      const { user, entry } = setup();
+      await user.click(square(2));
+      await user.click(highlightButton());
+      expect(square(2)).toHaveAccessibleName('Square 2, clue B, empty, highlighted');
+      expect(entry).toHaveFocus();
+
+      // A letter typed now still lands in the highlighted square.
+      await user.keyboard('Q');
+      expect(square(2)).toHaveAccessibleName('Square 2, clue B, Q, highlighted');
+    });
+
+    it("isn't part of Undo", async () => {
+      const { user } = setup();
+      await user.click(square(1));
+      await user.keyboard('{Control>}h{/Control}');
+      expect(screen.getByRole('button', { name: /Undo/ })).toBeDisabled();
+    });
+
+    it('shows highlights made by others', () => {
+      render(
+        <Solver
+          puzzle={puzzle}
+          solve={{}}
+          onEdit={vi.fn()}
+          marks={new Set([3])}
+          onMark={vi.fn()}
+        />,
+      );
+      expect(square(3)).toHaveAccessibleName('Square 3, clue A, empty, highlighted');
+      expect(blank(3)).toHaveAccessibleName('Clue A, letter 1 of 3, square 3, empty, highlighted');
+    });
+
+    it('offers no highlighting without onMark', async () => {
+      const user = userEvent.setup();
+      render(<Solver puzzle={puzzle} solve={{}} onEdit={vi.fn()} />);
+      expect(screen.queryByRole('button', { name: 'Highlight' })).not.toBeInTheDocument();
+      await user.click(square(1));
+      await user.keyboard('{Control>}h{/Control}');
+      expect(square(1)).toHaveAccessibleName('Square 1, clue A, empty');
     });
   });
 

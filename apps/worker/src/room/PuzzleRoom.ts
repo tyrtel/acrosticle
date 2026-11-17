@@ -71,6 +71,13 @@ export class PuzzleRoom extends DurableObject<Env> {
         updated_at INTEGER NOT NULL
       )`,
     );
+    this.sql.exec(
+      `CREATE TABLE IF NOT EXISTS marks (
+        cell INTEGER PRIMARY KEY,
+        marked_by TEXT NOT NULL,
+        marked_at INTEGER NOT NULL
+      )`,
+    );
   }
 
   /**
@@ -169,6 +176,9 @@ export class PuzzleRoom extends DurableObject<Env> {
       case 'cell/set':
         this.setCell(ws, me, message);
         return;
+      case 'cell/mark':
+        this.setMark(ws, me, message);
+        return;
       case 'presence/update':
         this.updatePresence(ws, me, message.cell);
         return;
@@ -227,6 +237,34 @@ export class PuzzleRoom extends DurableObject<Env> {
     this.noteActivity();
   }
 
+  /** Highlights a square for everyone, or removes its highlight. Doesn't change the room version. */
+  private setMark(
+    ws: WebSocket,
+    me: Attachment,
+    { cell, marked, clientSeq }: Extract<ClientMessage, { type: 'cell/mark' }>,
+  ): void {
+    const room = this.room();
+    if (!room || cell > room.cellCount) {
+      this.send(ws, { type: 'error', message: `There is no square ${cell}.` });
+      return;
+    }
+    if (marked) {
+      this.sql.exec(
+        `INSERT INTO marks (cell, marked_by, marked_at) VALUES (?, ?, ?)
+         ON CONFLICT(cell) DO UPDATE SET
+           marked_by = excluded.marked_by,
+           marked_at = excluded.marked_at`,
+        cell,
+        me.memberId,
+        Date.now(),
+      );
+    } else {
+      this.sql.exec('DELETE FROM marks WHERE cell = ?', cell);
+    }
+    this.broadcast({ type: 'cell/marked', cell, marked, by: me.memberId, clientSeq });
+    this.noteActivity();
+  }
+
   /** Refreshes the room's "last active" time for My puzzles, at most every 30 seconds. */
   private noteActivity(): void {
     const now = Date.now();
@@ -278,12 +316,17 @@ export class PuzzleRoom extends DurableObject<Env> {
       .exec<{ cell: number; letter: string }>('SELECT cell, letter FROM cells ORDER BY cell')
       .toArray()
       .flatMap(({ cell, letter }): [number, Entry][] => (isEntry(letter) ? [[cell, letter]] : []));
+    const marks = this.sql
+      .exec<{ cell: number }>('SELECT cell FROM marks ORDER BY cell')
+      .toArray()
+      .map(({ cell }) => cell);
     const joined = this.joinedAttachments();
 
     return {
       type: 'snapshot',
       puzzle: room.puzzle,
       cells,
+      marks,
       version: Number(this.readMeta('version') ?? '0'),
       you,
       members: joined.map(({ attachment, name }) => toMember(attachment, name)),
@@ -319,20 +362,23 @@ export class PuzzleRoom extends DurableObject<Env> {
   }
 
   private send(ws: WebSocket, message: ServerMessage): void {
-    ws.send(encodeMessage(messageForVersion(message, attachmentOf(ws).protocol)));
+    const readable = messageForVersion(message, attachmentOf(ws).protocol);
+    if (readable) ws.send(encodeMessage(readable));
   }
 
   /** Sends to every joined member, optionally skipping one socket, in each one's protocol version. */
   private broadcast(message: ServerMessage, except?: WebSocket): void {
-    const payloads = new Map<number, string>();
+    // One encoding per protocol version; null means that version gets nothing.
+    const payloads = new Map<number, string | null>();
     for (const { ws, attachment } of this.joinedAttachments(except)) {
       const { protocol } = attachment;
       let payload = payloads.get(protocol);
       if (payload === undefined) {
-        payload = encodeMessage(messageForVersion(message, protocol));
+        const readable = messageForVersion(message, protocol);
+        payload = readable && encodeMessage(readable);
         payloads.set(protocol, payload);
       }
-      ws.send(payload);
+      if (payload !== null) ws.send(payload);
     }
   }
 

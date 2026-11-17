@@ -45,6 +45,7 @@ describe('messageForVersion', () => {
       [1, e('THE')],
       [2, e('Q')],
     ],
+    marks: [2],
     version: 3,
     you: 'm1',
     members: [],
@@ -87,8 +88,21 @@ describe('messageForVersion', () => {
 
   it('only sends version 1 clients one-character entries', () => {
     const legacy = messageForVersion(snapshot, 1);
-    if (legacy.type !== 'snapshot') throw new Error('expected a snapshot');
+    if (legacy?.type !== 'snapshot') throw new Error('expected a snapshot');
     for (const [, entry] of legacy.cells) expect(isEntry(entry) && [...entry].length).toBe(1);
+  });
+
+  it('sends highlights only to clients from version 3', () => {
+    const marked: ServerMessage = {
+      type: 'cell/marked',
+      cell: 2,
+      marked: true,
+      by: 'm1',
+      clientSeq: 0,
+    };
+    expect(messageForVersion(marked, 3)).toBe(marked);
+    expect(messageForVersion(marked, 2)).toBeNull();
+    expect(messageForVersion(marked, 1)).toBeNull();
   });
 
   it('passes other messages through for version 1', () => {

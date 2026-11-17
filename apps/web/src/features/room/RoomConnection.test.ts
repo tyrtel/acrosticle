@@ -120,10 +120,10 @@ describe('RoomConnection', () => {
 describe('roomSocketUrl', () => {
   it('uses wss on https and ws on http, announcing the protocol version', () => {
     expect(roomSocketUrl('abc', { protocol: 'https:', host: 'example.com' })).toBe(
-      'wss://example.com/api/rooms/abc/ws?v=2',
+      'wss://example.com/api/rooms/abc/ws?v=3',
     );
     expect(roomSocketUrl('abc', { protocol: 'http:', host: 'localhost:5173' })).toBe(
-      'ws://localhost:5173/api/rooms/abc/ws?v=2',
+      'ws://localhost:5173/api/rooms/abc/ws?v=3',
     );
   });
 });

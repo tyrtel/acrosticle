@@ -77,6 +77,8 @@ describe('keyToAction', () => {
     [{ key: 'Z', ctrlKey: true, shiftKey: true }, 'redo'],
     [{ key: 'z', metaKey: true, shiftKey: true }, 'redo'],
     [{ key: 'y', ctrlKey: true }, 'redo'],
+    [{ key: 'h', ctrlKey: true }, 'mark'],
+    [{ key: 'H', ctrlKey: true }, 'mark'],
   ])('maps %o to %s', (input, type) => {
     expect(keyToAction(input, 'grid')).toEqual({ type });
   });
@@ -84,5 +86,8 @@ describe('keyToAction', () => {
   it('leaves other modifier combinations to the browser', () => {
     expect(keyToAction({ key: 'z', altKey: true, ctrlKey: true }, 'grid')).toBeNull();
     expect(keyToAction({ key: 'y', metaKey: true }, 'grid')).toBeNull();
+    // ⌘H hides the app on a Mac; Ctrl+Shift+H is left alone too.
+    expect(keyToAction({ key: 'h', metaKey: true }, 'grid')).toBeNull();
+    expect(keyToAction({ key: 'H', ctrlKey: true, shiftKey: true }, 'grid')).toBeNull();
   });
 });

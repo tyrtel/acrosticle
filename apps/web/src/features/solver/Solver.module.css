@@ -99,6 +99,12 @@
   background: var(--select);
 }
 
+/* The selected square is highlighted. */
+.toolbar .markButton[aria-pressed='true'] {
+  border-color: var(--mark-ring);
+  background: var(--mark);
+}
+
 .hint {
   margin: 0.5rem 0 0;
   font-size: 0.85rem;

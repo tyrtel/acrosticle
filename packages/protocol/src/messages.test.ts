@@ -32,6 +32,12 @@ describe('parseClientMessage', () => {
     }
   });
 
+  it('parses cell/mark, on or off', () => {
+    const mark = { type: 'cell/mark', cell: 4, marked: true, clientSeq: 2 };
+    expect(parseClientMessage(json(mark))).toEqual({ ok: true, value: mark });
+    expect(parseClientMessage(json({ ...mark, marked: false })).ok).toBe(true);
+  });
+
   it('parses presence updates and ping', () => {
     expect(parseClientMessage(json({ type: 'presence/update', cell: null })).ok).toBe(true);
     expect(parseClientMessage(json({ type: 'presence/update', cell: 3 })).ok).toBe(true);
@@ -56,6 +62,8 @@ describe('parseClientMessage', () => {
     ['fractional cell', { ...set, cell: 1.5 }],
     ['missing clientSeq', { type: 'cell/set', cell: 1, value: 'A' }],
     ['negative clientSeq', { ...set, clientSeq: -1 }],
+    ['a mark without on/off', { type: 'cell/mark', cell: 1, clientSeq: 0 }],
+    ['a mark on cell zero', { type: 'cell/mark', cell: 0, marked: true, clientSeq: 0 }],
     ['blank name', { type: 'join', name: '   ' }],
     ['long name', { type: 'join', name: 'x'.repeat(MAX_NAME_LENGTH + 1) }],
   ])('rejects %s', (_label, message) => {
@@ -71,6 +79,7 @@ describe('parseServerMessage', () => {
       clues: [{ label: 'A', text: 'x', cells: [1, 2] }],
     },
     cells: [[1, 'Q' as Entry]],
+    marks: [2],
     version: 3,
     you: 'm1',
     members: [{ id: 'm1', name: 'Ada', color: '#c00' }],
@@ -83,6 +92,7 @@ describe('parseServerMessage', () => {
       'cell/updated',
       { type: 'cell/updated', cell: 2, value: null, version: 4, by: 'm1', clientSeq: 7 },
     ],
+    ['cell/marked', { type: 'cell/marked', cell: 2, marked: false, by: 'm1', clientSeq: 3 }],
     ['presence', { type: 'presence', member: 'm1', cell: null }],
     ['member/joined', { type: 'member/joined', member: { id: 'm2', name: 'Bo', color: '#00c' } }],
     ['member/left', { type: 'member/left', member: 'm2' }],

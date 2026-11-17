@@ -107,7 +107,11 @@ interface RoomProps {
 }
 
 function Room({ roomId, name, createSocket }: RoomProps) {
-  const { state, solve, peers, setCell, setPresence } = useRoom(roomId, name, createSocket);
+  const { state, solve, marks, peers, setCell, setMark, setPresence } = useRoom(
+    roomId,
+    name,
+    createSocket,
+  );
 
   if (state.deleted) {
     return (
@@ -150,6 +154,8 @@ function Room({ roomId, name, createSocket }: RoomProps) {
         puzzle={state.puzzle}
         solve={solve}
         onEdit={setCell}
+        marks={marks}
+        onMark={setMark}
         peers={peers}
         onSelectionChange={setPresence}
       />

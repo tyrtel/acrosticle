@@ -6,7 +6,8 @@ export type KeyAction =
   | SolverAction
   | { readonly type: 'undo' }
   | { readonly type: 'redo' }
-  | { readonly type: 'multiLetter' };
+  | { readonly type: 'multiLetter' }
+  | { readonly type: 'mark' };
 
 /** The parts of a keyboard event the keymap needs (easy to build in tests). */
 export interface KeyInput {
@@ -30,6 +31,7 @@ export interface KeyInput {
  * | Delete        | clear in place             | clear in place               |
  * | Enter         | switch to clue view        | switch to grid view          |
  * | ⇧Enter, Insert | type several characters in this square (multi-letter mode)   |
+ * | Ctrl+H        | highlight this square, or remove its highlight             |
  * | Ctrl/⌘+Z      | undo your last edit        | undo your last edit          |
  * | Ctrl/⌘+⇧Z, Ctrl+Y | redo                   | redo                         |
  */
@@ -38,6 +40,8 @@ export function keyToAction(input: KeyInput, view: View): KeyAction | null {
     const key = input.key.toLowerCase();
     if (key === 'z') return { type: input.shiftKey ? 'redo' : 'undo' };
     if (key === 'y' && input.ctrlKey && !input.shiftKey) return { type: 'redo' };
+    // Ctrl only: ⌘H hides the app on a Mac.
+    if (key === 'h' && input.ctrlKey && !input.metaKey && !input.shiftKey) return { type: 'mark' };
   }
   if (input.ctrlKey || input.metaKey || input.altKey) return null;
 

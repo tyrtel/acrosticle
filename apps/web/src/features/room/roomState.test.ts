@@ -5,6 +5,7 @@ import {
   initialRoomState,
   peerCursors,
   roomReducer,
+  visibleMarks,
   visibleSolve,
   type RoomState,
 } from './roomState';
@@ -23,6 +24,7 @@ const snapshot = (
   type: 'snapshot',
   puzzle: puzzleFile,
   cells: [[1, L('Q')]],
+  marks: [1],
   version: 5,
   you: 'ada',
   members: [ada, bo],
@@ -139,6 +141,55 @@ describe('roomReducer', () => {
     });
     state = server(state, snapshot({ cells: [] }));
     expect(visibleSolve(state)).toEqual({ 2: 'Z' });
+  });
+
+  describe('highlights', () => {
+    const marked = (cell: number, on: boolean, by: string, clientSeq: number): ServerMessage => ({
+      type: 'cell/marked',
+      cell,
+      marked: on,
+      by,
+      clientSeq,
+    });
+    const localMark = (state: RoomState, cell: number, on: boolean, clientSeq: number) =>
+      roomReducer(state, { type: 'local-mark', mark: { cell, marked: on }, clientSeq });
+
+    it('loads highlights from the snapshot', () => {
+      expect([...visibleMarks(joined())]).toEqual([1]);
+    });
+
+    it('shows our highlight immediately, then clears it from pending when confirmed', () => {
+      let state = localMark(joined(), 2, true, 1);
+      expect([...visibleMarks(state)].sort()).toEqual([1, 2]);
+      state = server(state, marked(2, true, 'ada', 1));
+      expect(state.pendingMarks.size).toBe(0);
+      expect([...state.confirmedMarks].sort()).toEqual([1, 2]);
+    });
+
+    it("applies others' highlights, keeping our pending change on top", () => {
+      let state = localMark(joined(), 1, false, 4);
+      state = server(state, marked(1, true, 'bo', 4));
+      expect(visibleMarks(state).has(1)).toBe(false);
+      state = server(state, marked(2, true, 'bo', 5));
+      expect([...visibleMarks(state)]).toEqual([2]);
+    });
+
+    it('keeps a newer pending change when an older one is confirmed', () => {
+      let state = localMark(joined(), 2, true, 1);
+      state = localMark(state, 2, false, 2);
+      state = server(state, marked(2, true, 'ada', 1));
+      expect(visibleMarks(state).has(2)).toBe(false);
+    });
+
+    it('keeps pending highlights across a reconnect snapshot', () => {
+      let state = localMark(joined(), 2, true, 1);
+      state = server(state, snapshot({ marks: [] }));
+      expect([...visibleMarks(state)]).toEqual([2]);
+    });
+
+    it("doesn't change the room version", () => {
+      expect(server(joined(), marked(2, true, 'bo', 1)).version).toBe(5);
+    });
   });
 
   it('tracks presence, ignoring our own', () => {

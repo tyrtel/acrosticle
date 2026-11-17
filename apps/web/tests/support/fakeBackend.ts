@@ -157,6 +157,7 @@ export class FakeBackend {
 
 export class FakeRoom {
   readonly cells = new Map<number, Entry>();
+  readonly marks = new Set<number>();
   version = 0;
   private readonly sockets = new Map<FakeSocket, Member | null>();
   private nextMember = 1;
@@ -208,6 +209,7 @@ export class FakeRoom {
           type: 'snapshot',
           puzzle: this.puzzle,
           cells: [...this.cells],
+          marks: [...this.marks],
           version: this.version,
           you: member.id,
           members: [...this.sockets.values()].filter((m): m is Member => m !== null),
@@ -223,6 +225,19 @@ export class FakeRoom {
           cell: message.cell,
           value: message.value,
           version: this.version,
+          by,
+          clientSeq: message.clientSeq,
+        });
+        return;
+      }
+      case 'cell/mark': {
+        const by = this.sockets.get(socket)?.id ?? '?';
+        if (message.marked) this.marks.add(message.cell);
+        else this.marks.delete(message.cell);
+        this.broadcast({
+          type: 'cell/marked',
+          cell: message.cell,
+          marked: message.marked,
           by,
           clientSeq: message.clientSeq,
         });
