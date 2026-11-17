@@ -143,3 +143,12 @@
   font-weight: 600;
   line-height: 1;
 }
+
+/* Bars between squares end words in barred crosswords. */
+.barRight {
+  border-right: 3px solid var(--border-strong);
+}
+
+.barBottom {
+  border-bottom: 3px solid var(--border-strong);
+}

@@ -1,0 +1,22 @@
+{
+  "$comment": "An original rows-and-columns puzzle written for Gridicles, used to test that layout. No answers stored.",
+  "kind": "crossword",
+  "title": "Gridicles Rows Test",
+  "author": "Gridicles",
+  "style": "rows-columns",
+  "grid": ["....", "....", "....", "...."],
+  "clues": {
+    "across": [
+      { "number": 1, "text": "Row one, first / Row one, second" },
+      { "number": 2, "text": "Row two" },
+      { "number": 3, "text": "Row three, first / Row three, second" },
+      { "number": 4, "text": "Row four" }
+    ],
+    "down": [
+      { "number": 1, "text": "Column A" },
+      { "number": 2, "text": "Column B, first / Column B, second" },
+      { "number": 3, "text": "Column C" },
+      { "number": 4, "text": "Column D" }
+    ]
+  }
+}

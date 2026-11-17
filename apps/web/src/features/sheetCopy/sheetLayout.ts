@@ -34,6 +34,9 @@ export interface SheetCell {
   readonly circled?: boolean;
   /** Printed shaded (crosswords). */
   readonly shaded?: boolean;
+  /** A thick bar on the right / bottom edge (barred crosswords). */
+  readonly barRight?: boolean;
+  readonly barBottom?: boolean;
   /** Letters-grid squares show this cell's value (a formula), so solving in the sheet fills both. */
   readonly copies?: SheetPosition;
   readonly columnSpan?: number;

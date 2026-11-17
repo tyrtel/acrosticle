@@ -16,6 +16,8 @@ const MARK = '#bfe8c4';
 const GRID_BORDER = '1px solid #9a9a9a';
 const CIRCLED_BORDER = 'border:2px solid #333';
 const SHADE = '#e2e2e2';
+const BAR_RIGHT = 'border-right:3px solid #000';
+const BAR_BOTTOM = 'border-bottom:3px solid #000';
 
 const STYLES: Record<SheetCellKind, string> = {
   empty: '',
@@ -67,6 +69,8 @@ function htmlCell(cell: SheetCell, row: number, column: number): string {
   const style = [
     STYLES[cell.kind],
     cell.circled ? CIRCLED_BORDER : '',
+    cell.barRight ? BAR_RIGHT : '',
+    cell.barBottom ? BAR_BOTTOM : '',
     cell.marked ? `background:${MARK}` : cell.shaded ? `background:${SHADE}` : '',
   ]
     .filter(Boolean)

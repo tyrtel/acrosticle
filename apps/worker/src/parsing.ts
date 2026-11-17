@@ -1,12 +1,16 @@
 import { hasErrors } from '@gridicles/acrostic';
+import { clueNumberFit, crosswordFromFile, type CrosswordFileData } from '@gridicles/crossword';
 import {
   anthropicSender,
   DEFAULT_EFFORT,
   DEFAULT_MODEL,
   IMAGE_MEDIA_TYPES,
   isEffort,
+  parseCrosswordImage,
   parsePuzzleImage,
   tidyClues,
+  type CrosswordParseOutcome,
+  type TokenUsage,
   type Effort,
   type ClaudeSender,
   type ImageMediaType,
@@ -15,6 +19,7 @@ import {
   TidyCluesRequest,
   validateWith,
   type ApiError,
+  type ParseCrosswordResponse,
   type ParsePuzzleResponse,
   type TidyCluesResponse,
 } from '@gridicles/protocol';
@@ -51,6 +56,131 @@ export async function parsePuzzle(
   sender?: ClaudeSender,
   now = Date.now(),
 ): Promise<Response> {
+  return readImage(request, env, sender, now, {
+    read: (send, image) => parsePuzzleImage(send, image, parseSettings(env)),
+    respond: (outcome) => {
+      const body: ParsePuzzleResponse = {
+        file: outcome.file,
+        notes: [...outcome.notes],
+        issues: outcome.issues.map(({ code, severity, message }) => ({ code, severity, message })),
+        needsFixes: hasErrors(outcome.issues),
+        costUsd: outcome.costUsd,
+      };
+      return body;
+    },
+  });
+}
+
+/**
+ * `POST /api/crosswords/parse`: reads an uploaded crossword image (standard,
+ * barred or rows-and-columns; grid and clues, or just the grid) into a draft
+ * for the editor. Same rules and limits as reading acrostics.
+ */
+export async function parseCrossword(
+  request: Request,
+  env: Env,
+  sender?: ClaudeSender,
+  now = Date.now(),
+): Promise<Response> {
+  return readImage(request, env, sender, now, {
+    read: (send, image) => readCrosswordTwiceIfNeeded(env, now, send, image),
+    respond: (outcome) => {
+      const body: ParseCrosswordResponse = {
+        file: outcome.file,
+        notes: [...outcome.notes],
+        costUsd: outcome.costUsd,
+      };
+      return body;
+    },
+  });
+}
+
+/**
+ * Reads a crossword with the configured model, and if the grid it read
+ * doesn't number itself the way the printed clues do (barred grids, faint
+ * lines), takes a second look with the stronger model (PARSE_STRONG_MODEL),
+ * keeping whichever read fits the clues better. The second look is skipped
+ * once today's budget is used up. Both reads count as one logged run.
+ */
+async function readCrosswordTwiceIfNeeded(
+  env: Env,
+  now: number,
+  send: ClaudeSender,
+  image: { data: string; mediaType: ImageMediaType },
+): Promise<CrosswordParseOutcome> {
+  const first = await parseCrosswordImage(send, image, parseSettings(env));
+  if (!first.ok) return first;
+  const firstFit = fitOf(first.file);
+  if (firstFit === null || firstFit >= 1) return first;
+  const budget = Number(env.PARSE_DAILY_BUDGET_USD) || 0;
+  if ((await parseSpendSince(env.DB, startOfUtcDay(now))) + (first.costUsd ?? 0) >= budget) {
+    return first;
+  }
+
+  const second = await parseCrosswordImage(send, image, {
+    model: env.PARSE_STRONG_MODEL || STRONG_MODEL,
+    effort: 'high',
+  });
+  const both = {
+    costUsd: (first.costUsd ?? 0) + (second.costUsd ?? 0),
+    durationMs: first.durationMs + (second.durationMs ?? 0),
+    usage: {
+      inputTokens: first.usage.inputTokens + (second.usage?.inputTokens ?? 0),
+      outputTokens: first.usage.outputTokens + (second.usage?.outputTokens ?? 0),
+      cacheWriteTokens: first.usage.cacheWriteTokens + (second.usage?.cacheWriteTokens ?? 0),
+      cacheReadTokens: first.usage.cacheReadTokens + (second.usage?.cacheReadTokens ?? 0),
+    },
+  };
+  if (!second.ok || (fitOf(second.file) ?? 0) <= firstFit) return { ...first, ...both };
+  return {
+    ...second,
+    ...both,
+    notes: [
+      ...second.notes,
+      'The first reading of the grid didn’t match the clue numbers, so it was read again more carefully.',
+    ],
+  };
+}
+
+/** The stronger model for second looks, unless PARSE_STRONG_MODEL says otherwise. */
+const STRONG_MODEL = 'claude-opus-5-5';
+
+/** How well a read grid's numbering matches its clues (null if there's nothing to check). */
+function fitOf(file: CrosswordFileData): number | null {
+  const read = crosswordFromFile(file);
+  return read.ok ? clueNumberFit(read.crossword) : 0;
+}
+
+/** What a run tells the log, for any Claude feature. */
+interface RunFacts {
+  readonly ok: boolean;
+  readonly reason?: string;
+  readonly message?: string;
+  readonly model?: string;
+  readonly usage?: TokenUsage;
+  readonly costUsd?: number | null;
+  readonly durationMs?: number;
+}
+
+/**
+ * The steps every image upload shares: allowlisted creators only, a valid
+ * image, the per-person and daily limits checked before calling Claude, and
+ * every run logged for cost review.
+ *
+ * CPU note: the Workers free plan allows 10 ms of CPU per request. Waiting on
+ * Claude doesn't count, and base64 encoding uses native Buffer, but large
+ * uploads may still need Workers Paid; measure in production (design §6.5).
+ */
+async function readImage<T extends RunFacts>(
+  request: Request,
+  env: Env,
+  sender: ClaudeSender | undefined,
+  now: number,
+  steps: {
+    read: (send: ClaudeSender, image: { data: string; mediaType: ImageMediaType }) => Promise<T>;
+    respond: (outcome: T & { ok: true }) => unknown;
+  },
+): Promise<Response> {
   const user = await getCurrentUser(request, env);
   if (!user) return apiError(401, 'Sign in to read puzzle images.');
   if (!canCreate(user, env)) {
@@ -79,25 +209,17 @@ export async function parsePuzzle(
     return apiError(413, 'That image is too large (10 MB at most).');
   if (image.size === 0) return apiError(400, 'That image is empty.');
 
-  if ((await countParsesSince(env.DB, user.id, now - HOUR_MS)) >= PARSES_PER_HOUR) {
-    return apiError(
-      429,
-      `You've read ${PARSES_PER_HOUR} images in the last hour. Please try again later.`,
-    );
-  }
-  const budget = Number(env.PARSE_DAILY_BUDGET_USD) || 0;
-  if ((await parseSpendSince(env.DB, startOfUtcDay(now))) >= budget) {
-    return apiError(429, "Today's image-reading budget is used up. Please try again tomorrow.");
-  }
+  const limited = await overLimits(env, user.id, now);
+  if (limited) return limited;
 
   const data = Buffer.from(await image.arrayBuffer()).toString('base64');
   const send = sender ?? anthropicSender(new Anthropic({ apiKey }));
-  const outcome = await parsePuzzleImage(send, { data, mediaType: image.type }, parseSettings(env));
+  const outcome = await steps.read(send, { data, mediaType: image.type });
 
   await recordParseRun(env.DB, {
     userId: user.id,
     createdAt: now,
-    outcome: outcome.ok ? 'ok' : outcome.reason,
+    outcome: outcome.ok ? 'ok' : (outcome.reason ?? 'api-error'),
     model: outcome.model ?? null,
     inputTokens: (outcome.usage?.inputTokens ?? 0) + (outcome.usage?.cacheReadTokens ?? 0),
     outputTokens: outcome.usage?.outputTokens ?? 0,
@@ -105,16 +227,13 @@ export async function parsePuzzle(
     durationMs: outcome.durationMs ?? null,
   });
 
-  if (!outcome.ok) return apiError(outcome.reason === 'api-error' ? 502 : 422, outcome.message);
-
-  const body: ParsePuzzleResponse = {
-    file: outcome.file,
-    notes: [...outcome.notes],
-    issues: outcome.issues.map(({ code, severity, message }) => ({ code, severity, message })),
-    needsFixes: hasErrors(outcome.issues),
-    costUsd: outcome.costUsd,
-  };
-  return Response.json(body);
+  if (!outcome.ok) {
+    return apiError(
+      outcome.reason === 'api-error' ? 502 : 422,
+      outcome.message ?? 'Reading failed.',
+    );
+  }
+  return Response.json(steps.respond(outcome as T & { ok: true }));
 }
 
 /**

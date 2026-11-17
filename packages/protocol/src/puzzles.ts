@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AcrosticFile } from './puzzleFile';
+import { AcrosticFile, CrosswordFile } from './puzzleFile';
 
 /** Response to `POST /api/puzzles/parse`: a draft puzzle read from an image, to review. */
 export const ParsePuzzleResponse = z.object({
@@ -35,3 +35,12 @@ export const TidyCluesResponse = z.object({
   costUsd: z.number().nullable(),
 });
 export type TidyCluesResponse = z.infer<typeof TidyCluesResponse>;
+
+/** Response to `POST /api/crosswords/parse`: a draft crossword read from an image, for the editor. */
+export const ParseCrosswordResponse = z.object({
+  file: CrosswordFile,
+  /** What Claude was unsure about. */
+  notes: z.array(z.string()),
+  costUsd: z.number().nullable(),
+});
+export type ParseCrosswordResponse = z.infer<typeof ParseCrosswordResponse>;

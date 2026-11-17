@@ -1,6 +1,7 @@
 import type { CellNumber, Marks, SolveState } from '@gridicles/core';
 import { getCell } from '@gridicles/core';
 import { cellOf, type CrosswordIndex, type CrosswordSelection } from '@gridicles/crossword';
+import { squareLabel } from './labels';
 import { useCallback, useMemo, type MouseEvent } from 'react';
 import { describePeers, type PeerMap } from '../../components/PeerTag';
 import { PuzzleGrid, type GridLayout, type SquareView } from '../../components/PuzzleGrid';
@@ -40,7 +41,7 @@ export function CrosswordGrid({
       squares: puzzle.squares.map((square, i) =>
         square.kind === 'block'
           ? { kind: 'block' }
-          : { kind: 'letter', label: String(index.numberAt(cellOf(i)) ?? '') },
+          : { kind: 'letter', label: squareLabel(index, cellOf(i)) },
       ),
     }),
     [index, puzzle],
@@ -69,6 +70,8 @@ export function CrosswordGrid({
       circled: square.circled,
       shaded: square.shaded,
       badge: selected ? (selection.direction === 'across' ? '→' : '↓') : undefined,
+      barRight: index.hasBar(cell, 'right'),
+      barBottom: index.hasBar(cell, 'bottom'),
       peers: here,
     };
   };

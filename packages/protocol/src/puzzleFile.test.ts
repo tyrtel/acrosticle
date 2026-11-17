@@ -103,3 +103,18 @@ describe('parseCrosswordFile', () => {
     });
   });
 });
+
+describe('CrosswordFile layouts', () => {
+  it('accepts bars and the rows-and-columns style, and keeps them for browsers', () => {
+    const file = PuzzleFile.parse({
+      ...mini,
+      style: 'rows-columns',
+      bars: { right: [1], bottom: [2] },
+    });
+    expect(publicPuzzleFile(file)).toMatchObject({
+      style: 'rows-columns',
+      bars: { right: [1], bottom: [2] },
+    });
+    expect(PuzzleFile.safeParse({ ...mini, style: 'diagonal' }).success).toBe(false);
+  });
+});

@@ -38,10 +38,56 @@ export function toggleBlock(crossword: Crossword, cell: CellNumber, symmetric: b
   };
 }
 
-/** Resizes the grid, keeping the top-left squares; new squares are open. */
+/**
+ * Toggles the bar on a square's right or bottom edge (barred grids). With
+ * `symmetric`, the mirror bar (rotated half a turn) follows.
+ */
+export function toggleBar(
+  crossword: Crossword,
+  cell: CellNumber,
+  side: 'right' | 'bottom',
+  symmetric: boolean,
+): Crossword {
+  const { width, height } = crossword;
+  const index = cell - 1;
+  if (index < 0 || index >= width * height) throw new RangeError(`No square ${cell}`);
+  const row = Math.floor(index / width);
+  const column = index % width;
+  // A bar between this square and the next mirrors to the one between their mirror squares.
+  const mirror =
+    side === 'right'
+      ? (height - 1 - row) * width + (width - 2 - column) + 1
+      : (height - 2 - row) * width + (width - 1 - column) + 1;
+  const current = new Set(crossword.bars?.[side] ?? []);
+  const on = !current.has(cell);
+  for (const target of symmetric ? [cell, mirror] : [cell]) {
+    if (target < 1 || target > width * height) continue;
+    if (on) current.add(target);
+    else current.delete(target);
+  }
+  const bars = {
+    right:
+      side === 'right' ? [...current].sort((a, b) => a - b) : [...(crossword.bars?.right ?? [])],
+    bottom:
+      side === 'bottom' ? [...current].sort((a, b) => a - b) : [...(crossword.bars?.bottom ?? [])],
+  };
+  return { ...crossword, bars };
+}
+
+/** Resizes the grid, keeping the top-left squares (and their bars); new squares are open. */
 export function resizeCrossword(crossword: Crossword, width: number, height: number): Crossword {
   const w = clampSize(width);
   const h = clampSize(height);
+  // Cell numbers depend on the width, so bars move with their row and column.
+  const move = (cells: readonly CellNumber[] = []) =>
+    cells.flatMap((cell) => {
+      const row = Math.floor((cell - 1) / crossword.width);
+      const column = (cell - 1) % crossword.width;
+      return row < h && column < w ? [row * w + column + 1] : [];
+    });
+  const bars = crossword.bars && {
+    bars: { right: move(crossword.bars.right), bottom: move(crossword.bars.bottom) },
+  };
   const squares: CrosswordSquare[] = [];
   for (let row = 0; row < h; row++) {
     for (let column = 0; column < w; column++) {
@@ -52,7 +98,7 @@ export function resizeCrossword(crossword: Crossword, width: number, height: num
       squares.push(kept ?? OPEN);
     }
   }
-  return { ...crossword, width: w, height: h, squares };
+  return { ...crossword, ...bars, width: w, height: h, squares };
 }
 
 function clampSize(size: number): number {

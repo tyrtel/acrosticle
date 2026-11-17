@@ -124,3 +124,52 @@ describe('Tidy with Claude', () => {
     expect((clueBox() as HTMLTextAreaElement).value).toMatch(/^ACROSS/);
   });
 });
+
+describe('layouts, bars and instructions', () => {
+  it('adds bars on the right or below (with their mirror), and saves them', async () => {
+    const { user, onStart, start } = setup(blankCrossword(3, 3));
+    await user.click(screen.getByRole('radio', { name: 'Bar on the right' }));
+    await user.click(square(1, 1));
+    expect(square(1, 1)).toHaveAccessibleName('Row 1, column 1, open, bar right');
+    expect(square(3, 2)).toHaveAccessibleName('Row 3, column 2, open, bar right');
+    await user.click(screen.getByRole('radio', { name: 'Bar below' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Symmetric' }));
+    await user.click(square(2, 2));
+    expect(square(2, 2)).toHaveAccessibleName('Row 2, column 2, open, bar below');
+    await user.click(start());
+    expect(onStart.mock.calls[0]?.[0]).toMatchObject({ bars: { right: [1, 8], bottom: [5] } });
+  });
+
+  it('switches to rows and columns, with ROWS/COLUMNS clue text', async () => {
+    const { user, onStart, start } = setup(blankCrossword(2, 2));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Layout' }), 'rows-columns');
+    expect(screen.queryByRole('radio', { name: 'Bar below' })).not.toBeInTheDocument();
+    await user.clear(clueBox());
+    await user.type(clueBox(), 'ROWS{Enter}1. One / Two{Enter}COLUMNS{Enter}B. Bee');
+    await user.click(start());
+    expect(onStart.mock.calls[0]?.[0]).toMatchObject({
+      style: 'rows-columns',
+      clues: { across: [{ number: 1, text: 'One / Two' }], down: [{ number: 2, text: 'Bee' }] },
+    });
+  });
+
+  it('keeps instructions, and shows what Claude was unsure of', async () => {
+    const user = userEvent.setup();
+    const onStart = vi.fn();
+    render(
+      <CrosswordEditor
+        initial={{ ...blankCrossword(2, 2), notes: 'Every answer is a fish.' }}
+        readerNotes={['Square 3 was blurry.']}
+        onStart={onStart}
+      />,
+    );
+    expect(screen.getByRole('list', { name: 'Reading notes' })).toHaveTextContent(
+      'Square 3 was blurry.',
+    );
+    expect(screen.getByRole('textbox', { name: 'Instructions' })).toHaveValue(
+      'Every answer is a fish.',
+    );
+    await user.click(screen.getByRole('button', { name: 'Start solving' }));
+    expect(onStart.mock.calls[0]?.[0]).toMatchObject({ notes: 'Every answer is a fish.' });
+  });
+});

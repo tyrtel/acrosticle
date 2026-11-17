@@ -12,7 +12,7 @@ import {
 } from './features/account';
 import { ImportPuzzle, ReviewPuzzle, UploadImage } from './features/editor';
 import { blankCrossword, type Crossword } from '@gridicles/crossword';
-import { CrosswordEditor, ImportCrossword } from './features/crossword';
+import { CrosswordEditor, ImportCrossword, UploadCrossword } from './features/crossword';
 import { createCrosswordRoom, createRoom, createSampleRoom, RoomPage } from './features/room';
 import type { ApiResult } from './lib/api';
 import { SITE } from './lib/site';
@@ -86,7 +86,11 @@ type HomeScreen =
   | { readonly kind: 'import' }
   | { readonly kind: 'upload' }
   | { readonly kind: 'review'; readonly puzzle: Puzzle; readonly notes?: readonly string[] }
-  | { readonly kind: 'edit-crossword'; readonly crossword: Crossword };
+  | {
+      readonly kind: 'edit-crossword';
+      readonly crossword: Crossword;
+      readonly notes?: readonly string[];
+    };
 
 /** Start page: open the sample, or import and review a puzzle, then create a room for it. */
 function Home() {
@@ -131,18 +135,14 @@ function Home() {
             >
               {SITE.kind === 'crossword' ? 'Try the sample crossword' : 'Try the sample puzzle'}
             </button>{' '}
-            {SITE.kind === 'acrostic' && (
-              <>
-                <button
-                  type="button"
-                  disabled={!me.canCreate}
-                  aria-describedby={me.canCreate ? undefined : 'import-note'}
-                  onClick={() => setScreen({ kind: 'upload' })}
-                >
-                  Upload a puzzle image
-                </button>{' '}
-              </>
-            )}
+            <button
+              type="button"
+              disabled={!me.canCreate}
+              aria-describedby={me.canCreate ? undefined : 'import-note'}
+              onClick={() => setScreen({ kind: 'upload' })}
+            >
+              {SITE.kind === 'crossword' ? 'Upload a crossword photo' : 'Upload a puzzle image'}
+            </button>{' '}
             <button
               type="button"
               disabled={!me.canCreate}
@@ -176,6 +176,7 @@ function Home() {
       {screen.kind === 'edit-crossword' && (
         <CrosswordEditor
           initial={screen.crossword}
+          readerNotes={screen.notes}
           starting={creating}
           onStart={(crossword) => void startRoom(() => createCrosswordRoom(crossword))}
         />
@@ -183,7 +184,14 @@ function Home() {
       {screen.kind === 'import' && SITE.kind === 'acrostic' && (
         <ImportPuzzle onImport={(puzzle) => setScreen({ kind: 'review', puzzle })} />
       )}
-      {screen.kind === 'upload' && (
+      {screen.kind === 'upload' && SITE.kind === 'crossword' && (
+        <UploadCrossword
+          onParsed={({ crossword, notes }) =>
+            setScreen({ kind: 'edit-crossword', crossword, notes })
+          }
+        />
+      )}
+      {screen.kind === 'upload' && SITE.kind === 'acrostic' && (
         <UploadImage
           onParsed={({ puzzle, notes }) => setScreen({ kind: 'review', puzzle, notes })}
         />

@@ -68,6 +68,7 @@ restart `npm run dev`, then `npm run doctor:signin` to check.
 | -------------------------- | ------------------------------------------------------------ |
 | `npm run dev`              | Run web + worker locally (Acrosticle)                        |
 | `npm run dev:crossword`    | Run web + worker locally as Crosswordicle                    |
+| `npm run eval:crossword`   | Measure crossword photo reading against local answer keys    |
 | `npm run build`            | Production build of the web app                              |
 | `npm test`                 | All unit and integration tests                               |
 | `npm run test:unit`        | Unit tests only                                              |

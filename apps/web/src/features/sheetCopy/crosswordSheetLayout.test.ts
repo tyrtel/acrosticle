@@ -77,3 +77,32 @@ describe('crosswordSheetLayout', () => {
     expect(at(marked, 1, 6)?.text).toBe('1. ');
   });
 });
+
+describe('crosswordSheetLayout for barred and rows-and-columns puzzles', () => {
+  it('draws bars in both grids', () => {
+    const { rows } = crosswordSheetLayout(
+      miniIndex({ bars: { right: [1], bottom: [2] } } as never),
+      {},
+      noMarks,
+    );
+    expect(at(rows, 0, 0)).toMatchObject({ barRight: true });
+    expect(at(rows, 8, 1)).toMatchObject({ barBottom: true });
+  });
+
+  it('labels columns and rows, and heads the clues Rows and Columns', () => {
+    const { rows } = crosswordSheetLayout(
+      miniIndex({ style: 'rows-columns' } as never),
+      {},
+      noMarks,
+    );
+    expect(at(rows, 0, 0)?.text).toBe('A1');
+    expect(at(rows, 0, 2)?.text).toBe('C');
+    expect(at(rows, 1, 0)?.text).toBe('2');
+    expect(at(rows, 1, 1)?.text).toBe('');
+    const headings = rows
+      .flat()
+      .filter((cell) => cell?.kind === 'heading')
+      .map((cell) => cell?.text);
+    expect(headings).toEqual(['Rows', 'Columns']);
+  });
+});

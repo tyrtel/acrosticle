@@ -6,7 +6,12 @@ export const ROOM_ID_PATTERN = /^[A-Za-z0-9_-]{22}$/;
 export const RoomId = z.string().regex(ROOM_ID_PATTERN, 'not a valid room id');
 
 /** Built-in sample puzzles, which anyone may start a room for without signing in. */
-export const SAMPLE_IDS = ['diplo-crostic-37', 'gridicles-mini-1'] as const;
+export const SAMPLE_IDS = [
+  'diplo-crostic-37',
+  'gridicles-mini-1',
+  'gridicles-barred-1',
+  'gridicles-rows-1',
+] as const;
 export const SampleId = z.enum(SAMPLE_IDS);
 export type SampleId = z.infer<typeof SampleId>;
 

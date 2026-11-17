@@ -1,5 +1,6 @@
 import type { CrosswordIndex } from './crosswordIndex';
 import type { Direction } from './puzzle';
+import { printedLength } from './reconcile';
 
 export type CrosswordIssueCode =
   | 'no-squares'
@@ -56,7 +57,8 @@ function checkClues(index: CrosswordIndex, direction: Direction): CrosswordIssue
       );
     } else if (clue.text.trim() === '') {
       issues.push(warning('empty-clue', `The clue for ${clue.number} ${name} is blank.`));
-    } else {
+    } else if (index.puzzle.style !== 'rows-columns') {
+      // (Rows and columns hold several clues each, so a printed length can't be checked.)
       const printed = printedLength(clue.text);
       const actual = index.wordNumbered(direction, clue.number)?.cells.length;
       if (printed !== null && actual !== undefined && printed !== actual) {
@@ -75,13 +77,6 @@ function checkClues(index: CrosswordIndex, direction: Direction): CrosswordIssue
     }
   }
   return issues;
-}
-
-/** A printed answer length at the end of a clue: "(5)", or "(3,4)" / "(3-4)" for phrases. */
-function printedLength(text: string): number | null {
-  const match = /\((\d+(?:[,\s-]+\d+)*)\)\s*$/.exec(text);
-  if (!match?.[1]) return null;
-  return match[1].split(/[,\s-]+/).reduce((sum, part) => sum + Number(part), 0);
 }
 
 function warning(code: CrosswordIssueCode, message: string): CrosswordIssue {

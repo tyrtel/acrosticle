@@ -4,13 +4,25 @@ export const MAX_IMAGE_EDGE = 2576;
 const SEND_AS_IS_BYTES = 4 * 1024 * 1024;
 const SEND_AS_IS_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-/** The size to scale an image to so its long edge is at most `maxEdge` (never upscales). */
+/**
+ * Small images are enlarged to this long edge for crosswords: Claude reads the
+ * numbers in a small screenshot's squares far better at this size (measured
+ * with npm run eval:crossword).
+ */
+export const CROSSWORD_MIN_EDGE = 1568;
+
+/**
+ * The size to scale an image to so its long edge is at most `maxEdge`, and at
+ * least `minEdge` (default 0: never upscale).
+ */
 export function targetSize(
   width: number,
   height: number,
   maxEdge = MAX_IMAGE_EDGE,
+  minEdge = 0,
 ): { width: number; height: number } {
-  const scale = Math.min(1, maxEdge / Math.max(width, height));
+  const longest = Math.max(width, height);
+  const scale = longest < minEdge ? minEdge / longest : Math.min(1, maxEdge / longest);
   return { width: Math.round(width * scale), height: Math.round(height * scale) };
 }
 
@@ -18,10 +30,14 @@ export function targetSize(
  * Prepares a chosen image for upload: small enough images go as they are;
  * anything else is redrawn at most `maxEdge` px on the long edge, as JPEG.
  */
-export async function downscaleImage(file: Blob, maxEdge = MAX_IMAGE_EDGE): Promise<Blob> {
+export async function downscaleImage(
+  file: Blob,
+  maxEdge = MAX_IMAGE_EDGE,
+  minEdge = 0,
+): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   try {
-    const size = targetSize(bitmap.width, bitmap.height, maxEdge);
+    const size = targetSize(bitmap.width, bitmap.height, maxEdge, minEdge);
     const fits = size.width === bitmap.width && size.height === bitmap.height;
     if (fits && file.size <= SEND_AS_IS_BYTES && SEND_AS_IS_TYPES.includes(file.type)) return file;
 

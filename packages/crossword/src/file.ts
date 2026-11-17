@@ -1,4 +1,4 @@
-import type { Crossword, CrosswordClue, CrosswordSquare } from './puzzle';
+import type { Crossword, CrosswordClue, CrosswordSquare, CrosswordStyle } from './puzzle';
 import { cellOf, MAX_CROSSWORD_SIZE } from './puzzle';
 
 /**
@@ -16,6 +16,11 @@ export interface CrosswordFileData {
   readonly rebus?: Readonly<Record<string, string>> | undefined;
   readonly circled?: readonly number[] | undefined;
   readonly shaded?: readonly number[] | undefined;
+  /** Standard unless set (see `CrosswordStyle`). */
+  readonly style?: CrosswordStyle | undefined;
+  /** Cells with a bar on their right / bottom edge (barred grids). */
+  readonly bars?:
+    { readonly right?: readonly number[]; readonly bottom?: readonly number[] } | undefined;
   readonly clues: {
     readonly across: readonly CrosswordClue[];
     readonly down: readonly CrosswordClue[];
@@ -55,7 +60,8 @@ export function crosswordFromFile(file: CrosswordFileData): CrosswordResult {
   const rebus = new Map(
     Object.entries(file.rebus ?? {}).map(([cell, value]) => [Number(cell), value]),
   );
-  for (const cell of [...circled, ...shaded, ...rebus.keys()]) {
+  const bars = { right: [...(file.bars?.right ?? [])], bottom: [...(file.bars?.bottom ?? [])] };
+  for (const cell of [...circled, ...shaded, ...rebus.keys(), ...bars.right, ...bars.bottom]) {
     if (!Number.isInteger(cell) || cell < 1 || cell > count) {
       return { ok: false, error: `Square ${cell} is outside the ${width}×${height} grid.` };
     }
@@ -80,6 +86,8 @@ export function crosswordFromFile(file: CrosswordFileData): CrosswordResult {
     ok: true,
     crossword: {
       ...optional(file),
+      ...(file.style === 'rows-columns' && { style: 'rows-columns' as const }),
+      ...(bars.right.length + bars.bottom.length > 0 && { bars }),
       width,
       height,
       squares,
@@ -116,6 +124,11 @@ export function crosswordToFile(crossword: Crossword): CrosswordFileData {
     ...(Object.keys(rebus).length > 0 && { rebus }),
     ...(circled.length > 0 && { circled }),
     ...(shaded.length > 0 && { shaded }),
+    ...(crossword.style === 'rows-columns' && { style: 'rows-columns' as const }),
+    ...(crossword.bars &&
+      crossword.bars.right.length + crossword.bars.bottom.length > 0 && {
+        bars: { right: [...crossword.bars.right], bottom: [...crossword.bars.bottom] },
+      }),
     clues: crossword.clues,
   };
 }

@@ -19,6 +19,9 @@ export interface SquareView {
   readonly shaded?: boolean | undefined;
   /** A small mark in the corner, e.g. the crossword typing direction (→ or ↓) on the selected square. */
   readonly badge?: string | undefined;
+  /** A thick bar on the right / bottom edge, ending words (barred crosswords). */
+  readonly barRight?: boolean | undefined;
+  readonly barBottom?: boolean | undefined;
   /** Other solvers whose cursor is here: outlined in the first one's color, tagged on hover. */
   readonly peers?: readonly Peer[] | undefined;
   /** Native tooltip text. */
@@ -87,6 +90,8 @@ export function PuzzleGrid({
                 circled={view.circled ?? false}
                 shaded={view.shaded ?? false}
                 badge={view.badge}
+                barRight={view.barRight ?? false}
+                barBottom={view.barBottom ?? false}
                 peers={view.peers}
                 title={view.title}
                 calloutPlacement={r === 0 ? 'below' : 'above'}
@@ -112,6 +117,8 @@ interface SquareProps {
   readonly circled: boolean;
   readonly shaded: boolean;
   readonly badge: string | undefined;
+  readonly barRight: boolean;
+  readonly barBottom: boolean;
   readonly peers: readonly Peer[] | undefined;
   readonly title: string | undefined;
   /** The top row's callouts go below, where the grid's scroll area won't clip them. */
@@ -138,6 +145,8 @@ const Square = memo(function Square({
   circled,
   shaded,
   badge,
+  barRight,
+  barBottom,
   peers,
   title,
   calloutPlacement,
@@ -148,6 +157,8 @@ const Square = memo(function Square({
     styles.square,
     KIND_CLASS[square.kind],
     shaded && styles.shaded,
+    barRight && styles.barRight,
+    barBottom && styles.barBottom,
     tone && styles[tone],
     marked && styles.marked,
     selected && styles.selected,

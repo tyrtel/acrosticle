@@ -276,7 +276,27 @@ even a clean file, goes through the editor so the creator checks it first.
 - **Creating any puzzle needs an allowlisted account** (acrostic or crossword), as now.
 - Order: (A) editor + local clue reading ✅, (B) "Tidy with Claude" ✅ (2026-11-17: low effort on
   `PARSE_MODEL`, shares the hourly limit and daily budget with image reading), (C) photo parsing
-  with an accuracy check.
+  with an accuracy check ✅ (below).
+
+### Photo reading, barred grids and rows-and-columns (C1–C3), built 2026-11-17
+
+- **Layouts:** crosswords can have **bars** (barred cryptic grids: thick lines end words; numbering,
+  typing, the editor, Copy to Sheet and .ipuz import all handle them) and a **rows-and-columns**
+  style (no word breaks: each row is one "across" entry labelled 1, 2, … and each column one "down"
+  entry labelled A, B, …, holding several clues joined with " / ").
+- **Instructions** printed with a puzzle are kept as its notes and shown above the grid.
+- **Reading a photo** (`POST /api/crosswords/parse`): small images are enlarged to 1568 px first
+  (it took the screenshot sample from 60% to 100% of squares right). Claude returns the grid, bars,
+  the positions of printed numbers, the style, clues and instructions. Then, deterministically:
+  - a **barred** grid whose clues all print lengths is **laid out from the clues alone**
+    (`solveBarredLayout`: numbers run in reading order, each numbered square starts the answers with
+    that number, every square is in some answer); vision reads thin bars unreliably, even on Opus;
+  - an ordinary grid is repaired where answer lengths show a misread black square;
+  - if the grid still doesn't number itself like the clues, the server **reads again with
+    `PARSE_STRONG_MODEL`** (Opus, high effort, about $0.20) and keeps the better fit.
+- **Accuracy** (`npm run eval:crossword`, local samples in the git-ignored `samples/crosswords/`
+  with answer keys): every sample 100% (grid, numbering, clues, style) on Haiku plus the repairs; the
+  screenshot sometimes needs the second look. About $0.003 a photo, $0.06 with a second look.
 
 ## Still open
 

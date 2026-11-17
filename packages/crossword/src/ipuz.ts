@@ -35,6 +35,7 @@ export function crosswordFromIpuz(data: Json): CrosswordResult {
   const block = typeof data.block === 'string' ? data.block : '#';
 
   const squares: CrosswordSquare[] = [];
+  const bars = { right: new Set<number>(), bottom: new Set<number>() };
   for (let row = 0; row < height; row++) {
     const cells: Json[] = Array.isArray(puzzle[row]) ? (puzzle[row] as Json[]) : [];
     if (cells.length !== width)
@@ -42,6 +43,7 @@ export function crosswordFromIpuz(data: Json): CrosswordResult {
     const answers: Json[] = Array.isArray(solution[row]) ? (solution[row] as Json[]) : [];
     for (let column = 0; column < width; column++) {
       squares.push(readSquare(cells[column], answers[column], block));
+      readBars(cells[column], row, column, width, bars);
     }
   }
 
@@ -57,6 +59,12 @@ export function crosswordFromIpuz(data: Json): CrosswordResult {
     ...text(data, 'author'),
     ...text(data, 'copyright'),
     ...text(data, 'notes'),
+    ...(bars.right.size + bars.bottom.size > 0 && {
+      bars: {
+        right: [...bars.right].sort((a, b) => a - b),
+        bottom: [...bars.bottom].sort((a, b) => a - b),
+      },
+    }),
     width,
     height,
     squares,
@@ -79,6 +87,24 @@ function readSquare(cell: Json, answer: Json, block: string): CrosswordSquare {
     circled: style.shapebg === 'circle',
     shaded: Boolean(style.highlight) || typeof style.color === 'string',
   };
+}
+
+/** .ipuz bars: a cell style's "barred" holds T, R, B and/or L for the edges with a bar. */
+function readBars(
+  cell: Json,
+  row: number,
+  column: number,
+  width: number,
+  bars: { right: Set<number>; bottom: Set<number> },
+): void {
+  const style = isRecord(cell) && isRecord(cell.style) ? cell.style : {};
+  if (typeof style.barred !== 'string') return;
+  const cellNumber = row * width + column + 1;
+  const edges = style.barred.toUpperCase();
+  if (edges.includes('R')) bars.right.add(cellNumber);
+  if (edges.includes('B')) bars.bottom.add(cellNumber);
+  if (edges.includes('L') && column > 0) bars.right.add(cellNumber - 1);
+  if (edges.includes('T') && row > 0) bars.bottom.add(cellNumber - width);
 }
 
 function readClue(entry: Json): CrosswordClue[] {

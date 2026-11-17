@@ -22,9 +22,9 @@ import { ClueLists } from './ClueLists';
 import { CrosswordGrid } from './CrosswordGrid';
 import styles from './CrosswordSolver.module.css';
 import { crosswordModel } from './crosswordModel';
+import { directionName, wordName } from './labels';
 
 const NO_PEERS: PeerMap = new Map();
-const DIRECTION_NAME = { across: 'Across', down: 'Down' } as const;
 
 export interface CrosswordSolverProps {
   /** A crossword with no `validateCrossword` errors. */
@@ -91,7 +91,7 @@ export function CrosswordSolver({
   const entry = solve[selection.cell];
   const position = word ? word.cells.indexOf(selection.cell) + 1 : 0;
   const where = word
-    ? `${word.number} ${DIRECTION_NAME[word.direction]}: ${word.clue ?? 'no clue'}. Square ${position} of ${word.cells.length}, ${entry ?? 'empty'}${multiLetterOn ? ', typing several letters: Enter saves, Escape cancels' : ''}`
+    ? `${wordName(index, word)}: ${word.clue ?? 'no clue'}. Square ${position} of ${word.cells.length}, ${entry ?? 'empty'}${multiLetterOn ? ', typing several letters: Enter saves, Escape cancels' : ''}`
     : '';
   const direction = word?.direction ?? selection.direction;
 
@@ -101,6 +101,12 @@ export function CrosswordSolver({
         <h2 className={styles.title}>{puzzle.title ?? 'Untitled crossword'}</h2>
         {puzzle.author && <p className={styles.byline}>By {puzzle.author}</p>}
       </header>
+      {puzzle.notes && (
+        <details className={styles.notes} open>
+          <summary>Instructions</summary>
+          <p>{puzzle.notes}</p>
+        </details>
+      )}
       <SolverInput {...inputProps} describedBy="crossword-where" />
       <p id="crossword-where" className="visually-hidden" aria-live="polite">
         {where}
@@ -110,19 +116,17 @@ export function CrosswordSolver({
           <EditTools {...toolProps}>
             <ToolButton
               onClick={() => select(toggleDirection(index, selection))}
-              title={`Typing ${direction}: switch to ${direction === 'across' ? 'down' : 'across'} (Space)`}
+              title={`Typing ${directionName(index, direction).toLowerCase()}: switch to ${directionName(index, direction === 'across' ? 'down' : 'across').toLowerCase()} (Space)`}
               aria-label={`Typing ${direction}. Switch direction`}
             >
-              {direction === 'across' ? '→ Across' : '↓ Down'}
+              {direction === 'across' ? '→ ' : '↓ '}
+              {directionName(index, direction)}
             </ToolButton>
           </EditTools>
           <p className={styles.clueBar} aria-hidden="true">
             {word && (
               <>
-                <strong>
-                  {word.number} {DIRECTION_NAME[word.direction]}
-                </strong>{' '}
-                {word.clue ?? <em>(no clue)</em>}
+                <strong>{wordName(index, word)}</strong> {word.clue ?? <em>(no clue)</em>}
               </>
             )}
           </p>

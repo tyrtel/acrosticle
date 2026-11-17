@@ -1,5 +1,5 @@
 import { getCell, type Marks, type SolveState } from '@gridicles/core';
-import { cellOf, type CrosswordIndex, type Word } from '@gridicles/crossword';
+import { cellOf, columnLabel, type CrosswordIndex, type Word } from '@gridicles/crossword';
 import type { SheetCell, SheetLayout, SheetPosition } from './sheetLayout';
 
 /** Roughly how many characters of clue text fit in one narrow column. */
@@ -28,7 +28,8 @@ export function crosswordSheetLayout(
   const lettersTop = height + GRID_GAP_ROWS;
   const clueLeft = width + 1;
   const words = [...index.words('across'), ...index.words('down')];
-  const clueText = (word: Word) => `${word.number}. ${word.clue ?? ''}`;
+  const rowsColumns = index.puzzle.style === 'rows-columns';
+  const clueText = (word: Word) => `${word.label}. ${word.clue ?? ''}`;
   const longestClue = Math.max(0, ...words.map((word) => clueText(word).length));
   const clueColumns = Math.max(MIN_CLUE_COLUMNS, Math.ceil(longestClue / CHARS_PER_COLUMN));
   const answerLeft = clueLeft + clueColumns;
@@ -55,15 +56,32 @@ export function crosswordSheetLayout(
       return;
     }
     const cell = cellOf(i);
-    const look = { marked: marks.has(cell), circled: square.circled, shaded: square.shaded };
-    put(row, column, { kind: 'label', text: String(index.numberAt(cell) ?? ''), ...look });
+    const look = {
+      marked: marks.has(cell),
+      circled: square.circled,
+      shaded: square.shaded,
+      ...(index.hasBar(cell, 'right') && { barRight: true }),
+      ...(index.hasBar(cell, 'bottom') && { barBottom: true }),
+    };
+    // Rows and columns: column letters along the top and row numbers down the side, as printed.
+    const label = rowsColumns
+      ? `${row === 0 ? columnLabel(column) : ''}${column === 0 ? String(row + 1) : ''}`
+      : String(index.numberAt(cell) ?? '');
+    put(row, column, { kind: 'label', text: label, ...look });
     put(lettersTop + row, column, { kind: 'letter', text: getCell(solve, cell) ?? '', ...look });
     letterAt.set(cell, { row: lettersTop + row, column });
   });
 
   let row = 0;
   for (const direction of ['across', 'down'] as const) {
-    put(row++, clueLeft, { kind: 'heading', text: direction === 'across' ? 'Across' : 'Down' });
+    const heading = rowsColumns
+      ? direction === 'across'
+        ? 'Rows'
+        : 'Columns'
+      : direction === 'across'
+        ? 'Across'
+        : 'Down';
+    put(row++, clueLeft, { kind: 'heading', text: heading });
     for (const word of index.words(direction)) {
       put(row, clueLeft, { kind: 'clue', text: clueText(word), columnSpan: clueColumns });
       for (let c = clueLeft + 1; c < answerLeft; c++) put(row, c, null);

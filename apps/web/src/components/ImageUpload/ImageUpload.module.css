@@ -1,0 +1,23 @@
+.upload {
+  max-width: 60rem;
+}
+
+.preview {
+  display: block;
+  max-width: min(100%, 28rem);
+  max-height: 24rem;
+  margin: 0.5rem 0;
+  border: 1px solid var(--border);
+  object-fit: contain;
+}
+
+.reading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.error {
+  color: var(--error);
+}

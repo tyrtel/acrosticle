@@ -35,3 +35,6 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Local test photos of published crosswords (copyrighted): used by the accuracy check, never committed.
+samples/crosswords/

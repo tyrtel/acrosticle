@@ -56,3 +56,38 @@ test('clicking a clue moves there, and highlights reach the other solver', async
     '9, row 5, column 3, empty, highlighted, Ada is here',
   );
 });
+
+/** Starts a room for one of the test samples (the e2e servers let guests start samples). */
+async function startTestSample(page: Page, sample: string): Promise<void> {
+  await page.goto('/');
+  const roomId = await page.evaluate(async (id) => {
+    const res = await fetch('/api/rooms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sample: id }),
+    });
+    return ((await res.json()) as { roomId: string }).roomId;
+  }, sample);
+  await page.goto(`/r/${roomId}`);
+  await join(page, 'Ada');
+}
+
+test('a barred crossword: bars end the words, and instructions are shown', async ({ page }) => {
+  await startTestSample(page, 'gridicles-barred-1');
+  await expect(page.getByText('A barred grid: thick lines end the words.')).toBeVisible();
+  // 1 Across is two squares: typing stops at the bar after square 2. (Square 1 starts
+  // selected, and clicking it would switch to down, so start on square 2.)
+  await at(page, 1, 2).click();
+  await page.keyboard.type('YZ');
+  await expect(at(page, 1, 2)).toHaveAccessibleName(/row 1, column 2, Z/);
+  await expect(at(page, 1, 3)).toHaveAccessibleName(/row 1, column 3, empty/);
+});
+
+test('a rows-and-columns crossword: typing runs along the whole row', async ({ page }) => {
+  await startTestSample(page, 'gridicles-rows-1');
+  await expect(page.getByRole('region', { name: 'Rows clues' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Column B: / })).toBeVisible();
+  await at(page, 1, 2).click();
+  await page.keyboard.type('BCD');
+  await expect(at(page, 1, 4)).toHaveAccessibleName(/row 1, column 4, D/);
+});

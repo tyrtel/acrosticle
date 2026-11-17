@@ -1,0 +1,31 @@
+{
+  "$comment": "An original barred layout written for Gridicles, used to test barred grids. No answers stored.",
+  "kind": "crossword",
+  "title": "Gridicles Barred Test",
+  "author": "Gridicles",
+  "notes": "A barred grid: thick lines end the words. Some squares are checked only one way.",
+  "grid": [".....", ".....", ".....", ".....", "....."],
+  "bars": { "right": [2, 9, 13, 17, 23], "bottom": [3, 6, 10, 14, 17, 19] },
+  "clues": {
+    "across": [
+      { "number": 1, "text": "First across (2)" },
+      { "number": 3, "text": "Second across (3)" },
+      { "number": 6, "text": "Third across (4)" },
+      { "number": 8, "text": "Fourth across (3)" },
+      { "number": 9, "text": "Fifth across (2)" },
+      { "number": 11, "text": "Sixth across (2)" },
+      { "number": 12, "text": "Seventh across (3)" },
+      { "number": 13, "text": "Eighth across (3)" },
+      { "number": 14, "text": "Ninth across (2)" }
+    ],
+    "down": [
+      { "number": 1, "text": "First down (2)" },
+      { "number": 2, "text": "Second down (4)" },
+      { "number": 4, "text": "Third down (3)" },
+      { "number": 5, "text": "Fourth down (2)" },
+      { "number": 7, "text": "Fifth down (4)" },
+      { "number": 8, "text": "Sixth down (3)" },
+      { "number": 10, "text": "Seventh down (3)" }
+    ]
+  }
+}

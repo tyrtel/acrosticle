@@ -1,4 +1,5 @@
-import type { Crossword, CrosswordClue, Direction } from './puzzle';
+import type { Crossword, CrosswordClue, CrosswordStyle, Direction } from './puzzle';
+import { columnLabel } from './puzzle';
 
 /** A line of the clue text that couldn't be read as a clue (kept, and reported). */
 export interface ClueTextProblem {
@@ -13,7 +14,9 @@ export interface ClueTextResult {
   readonly problems: readonly ClueTextProblem[];
 }
 
-const HEADING = /^\s*(across|down)\s*:?\s*$/i;
+const HEADING = /^\s*(across|down|rows?|columns?)\s*:?\s*$/i;
+// Rows-and-columns puzzles label columns with letters: "B. Clue".
+const LETTERED = /^\s*([A-Z]{1,2})\s*[.):-]\s+(.+?)\s*$/;
 // "1. Clue", "1) Clue", "1: Clue", "1 Clue", and "1A Clue" / "1-Down Clue" (direction in the number).
 const CLUE = /^\s*(\d+)\s*(?:-?\s*(a|d|across|down)\b)?\s*[.):-]?\s+(.+?)\s*$/i;
 
@@ -38,7 +41,13 @@ export function parseClueText(text: string): ClueTextResult {
     if (line === '') return;
     const heading = HEADING.exec(line);
     if (heading?.[1]) {
-      direction = heading[1].toLowerCase() === 'across' ? 'across' : 'down';
+      const name = heading[1].toLowerCase();
+      direction = name === 'across' || name.startsWith('row') ? 'across' : 'down';
+      return;
+    }
+    const lettered = LETTERED.exec(line);
+    if (lettered?.[1] && lettered[2] && direction === 'down') {
+      clues.down.push({ number: columnNumber(lettered[1]), text: lettered[2] });
       return;
     }
     const clue = CLUE.exec(line);
@@ -66,9 +75,30 @@ export function parseClueText(text: string): ClueTextResult {
   return { clues, problems };
 }
 
-/** Writes clues as text, in the form `parseClueText` reads. */
-export function formatClueText(clues: Crossword['clues']): string {
-  const section = (title: string, list: readonly CrosswordClue[]) =>
-    [title, ...list.map((clue) => `${clue.number}. ${clue.text}`)].join('\n');
-  return `${section('ACROSS', clues.across)}\n\n${section('DOWN', clues.down)}`;
+/**
+ * Writes clues as text, in the form `parseClueText` reads. Rows-and-columns
+ * puzzles use ROWS and COLUMNS headings, with columns labelled by letter.
+ */
+export function formatClueText(
+  clues: Crossword['clues'],
+  style: CrosswordStyle = 'standard',
+): string {
+  const rows = style === 'rows-columns';
+  const section = (title: string, list: readonly CrosswordClue[], lettered: boolean) =>
+    [
+      title,
+      ...list.map(
+        (clue) => `${lettered ? columnLabel(clue.number - 1) : clue.number}. ${clue.text}`,
+      ),
+    ].join('\n');
+  return `${section(rows ? 'ROWS' : 'ACROSS', clues.across, false)}\n\n${section(
+    rows ? 'COLUMNS' : 'DOWN',
+    clues.down,
+    rows,
+  )}`;
+}
+
+/** "A" is column 1, "Z" 26, "AA" 27. */
+function columnNumber(label: string): number {
+  return [...label].reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0);
 }

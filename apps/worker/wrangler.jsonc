@@ -30,6 +30,9 @@
     // sample at about $0.004 per image; everything else is caught by validation.
     "PARSE_MODEL": "claude-haiku-5-5",
     "PARSE_EFFORT": "medium",
+    // The model for a second look at crossword photos whose grid doesn't fit their clue numbers
+    // (barred grids): measured 2026-11-17 with npm run eval:crossword, about $0.20 a read.
+    "PARSE_STRONG_MODEL": "claude-opus-5-5",
     // Two sites, one codebase (docs/planning/crosswords.md): this Worker is Acrosticle
     // (acrostics); `--env crossword` below deploys Crosswordicle (crosswords). They share the
     // database, the session cookie (for COOKIE_DOMAIN) and sign-in (on SIGN_IN_ORIGIN, whose
@@ -81,6 +84,7 @@
         "PARSE_DAILY_BUDGET_USD": "5",
         "PARSE_MODEL": "claude-haiku-5-5",
         "PARSE_EFFORT": "medium",
+        "PARSE_STRONG_MODEL": "claude-opus-5-5",
         "SITE_KIND": "crossword",
         "ACROSTIC_ORIGIN": "https://acrosticle.tyrtel.workers.dev",
         "CROSSWORD_ORIGIN": "https://crosswordicle.tyrtel.workers.dev",

@@ -39,6 +39,7 @@
 | `GET /api/rooms/:id`            | Check a room exists before joining; `{ roomId, title }` or 404                                                                           |
 | `DELETE /api/rooms/:id`         | Delete a room for everyone (its creator only); members get `room/deleted`                                                                |
 | `POST /api/puzzles/parse`       | Read an uploaded image into a draft puzzle with Claude (allowlisted creators; per-person and daily limits)                               |
+| `POST /api/crosswords/parse`    | Read an uploaded crossword image into a draft for the editor (allowlisted creators; may read twice, see crosswords.md)                   |
 | `POST /api/crosswords/clues`    | Sort messy pasted clue text into Across/Down clues with Claude (allowlisted creators; shares the image-reading limits)                   |
 | `GET /api/rooms/:id/ws`         | WebSocket upgrade into the room; `?v=3` announces the client's protocol version (ADR 0005)                                               |
 | `GET /api/auth/google`          | Start Google sign-in (`?returnTo=/path`). On Crosswordicle, hands off to Acrosticle with `returnOrigin`                                  |

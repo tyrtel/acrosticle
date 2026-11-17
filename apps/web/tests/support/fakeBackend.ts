@@ -39,6 +39,11 @@ export class FakeBackend {
     body: { error: "Tidying clues isn't set up on this server." },
   };
   readonly tidiedTexts: string[] = [];
+  /** What /api/crosswords/parse answers. */
+  crosswordParseReply: { status: number; body: unknown } = {
+    status: 503,
+    body: { error: "Image parsing isn't set up on this server." },
+  };
   /** How long parsing takes; the request can be cancelled meanwhile. */
   parseDelayMs = 0;
   /** Images uploaded for parsing. */
@@ -104,6 +109,9 @@ export class FakeBackend {
       if (!this.me.user) return json(401, { error: 'Sign in to see your puzzles.' });
       const rooms = [...this.myRooms].sort((a, b) => b.updatedAt - a.updatedAt);
       return json(200, { rooms });
+    }
+    if (url === '/api/crosswords/parse' && init?.method === 'POST') {
+      return json(this.crosswordParseReply.status, this.crosswordParseReply.body);
     }
     if (url === '/api/crosswords/clues' && init?.method === 'POST') {
       this.tidiedTexts.push((JSON.parse(init.body as string) as { text: string }).text);

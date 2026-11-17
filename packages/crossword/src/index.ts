@@ -7,3 +7,5 @@ export * from './puzzle';
 export * from './validateCrossword';
 export * from './clueText';
 export * from './editing';
+export * from './reconcile';
+export * from './solveBarred';

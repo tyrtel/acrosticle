@@ -67,3 +67,18 @@
 .tidy .note {
   margin: 0;
 }
+
+.modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  padding: 0.2rem 0.6rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.modes legend {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}

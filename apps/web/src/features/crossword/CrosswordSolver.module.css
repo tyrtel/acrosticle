@@ -135,3 +135,29 @@
 .loaded h3 {
   margin: 0;
 }
+
+/* Instructions printed with the puzzle (themed and variant crosswords). */
+.notes {
+  max-width: 50rem;
+  margin: 0 0 0.75rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.notes summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notes p {
+  margin: 0.4rem 0 0.2rem;
+  white-space: pre-line;
+}
+
+/* A row's or column's several clues, one per line. */
+.clueParts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}

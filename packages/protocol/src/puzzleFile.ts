@@ -58,6 +58,13 @@ export const CrosswordFile = z.object({
   rebus: z.record(z.string(), z.string().min(1).max(MAX_ENTRY_LENGTH)).optional(),
   circled: z.array(cellNumber).readonly().optional(),
   shaded: z.array(cellNumber).readonly().optional(),
+  style: z.enum(['standard', 'rows-columns']).optional(),
+  bars: z
+    .object({
+      right: z.array(cellNumber).readonly().optional(),
+      bottom: z.array(cellNumber).readonly().optional(),
+    })
+    .optional(),
   clues: z.object({ across: z.array(clue).readonly(), down: z.array(clue).readonly() }),
 });
 export type CrosswordFile = z.infer<typeof CrosswordFile>;

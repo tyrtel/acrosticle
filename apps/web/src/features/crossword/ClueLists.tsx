@@ -3,6 +3,7 @@ import { memo, useEffect } from 'react';
 import { ToolButton } from '../../components/SolverShell';
 import styles from './CrosswordSolver.module.css';
 import { crosswordClueId } from './elementIds';
+import { directionName, wordName } from './labels';
 
 export interface ClueListsProps {
   readonly index: CrosswordIndex;
@@ -29,6 +30,8 @@ export function ClueLists({ index, current, crossing, onSelect }: ClueListsProps
         <ClueList
           key={direction}
           direction={direction}
+          heading={directionName(index, direction, true)}
+          nameOf={(word) => wordName(index, word)}
           words={index.words(direction)}
           current={current?.direction === direction ? current.number : null}
           crossing={crossing?.direction === direction ? crossing.number : null}
@@ -41,18 +44,21 @@ export function ClueLists({ index, current, crossing, onSelect }: ClueListsProps
 
 const ClueList = memo(function ClueList({
   direction,
+  heading,
+  nameOf,
   words,
   current,
   crossing,
   onSelect,
 }: {
   readonly direction: Direction;
+  readonly heading: string;
+  readonly nameOf: (word: Word) => string;
   readonly words: readonly Word[];
   readonly current: number | null;
   readonly crossing: number | null;
   readonly onSelect: (word: Word) => void;
 }) {
-  const heading = direction === 'across' ? 'Across' : 'Down';
   return (
     <section className={styles.clueList} aria-label={`${heading} clues`}>
       <h3>{heading}</h3>
@@ -69,11 +75,11 @@ const ClueList = memo(function ClueList({
               <ToolButton
                 className={className}
                 aria-current={word.number === current ? 'true' : undefined}
-                aria-label={`${word.number} ${heading}: ${word.clue ?? 'no clue'}`}
+                aria-label={`${nameOf(word)}: ${word.clue ?? 'no clue'}`}
                 onClick={() => onSelect(word)}
               >
-                <span className={styles.clueNumber}>{word.number}</span>
-                <span>{word.clue ?? <em>(no clue)</em>}</span>
+                <span className={styles.clueNumber}>{word.label}</span>
+                <ClueText text={word.clue} />
               </ToolButton>
             </li>
           );
@@ -82,3 +88,17 @@ const ClueList = memo(function ClueList({
     </section>
   );
 });
+
+/** A clue, or a row's several clues (separated by " / ") one per line. */
+function ClueText({ text }: { readonly text: string | null }) {
+  if (text === null) return <em>(no clue)</em>;
+  const parts = text.split(' / ');
+  if (parts.length === 1) return <span>{text}</span>;
+  return (
+    <span className={styles.clueParts}>
+      {parts.map((part, i) => (
+        <span key={i}>{part}</span>
+      ))}
+    </span>
+  );
+}
