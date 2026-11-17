@@ -21,9 +21,15 @@
   --select: light-dark(#ffd84d, #8a6a10);
   --word: light-dark(#dce8fb, #2b3c5c);
   --clue: light-dark(#eef3fb, #26303f);
+  /* Crossword squares printed shaded. */
+  --shade: light-dark(#e2e2e2, #3a3a40);
   /* Squares someone highlighted (Ctrl+H): a fill, and a ring when the square is also selected. */
   --mark: light-dark(#bfe8c4, #1f5a2c);
   --mark-ring: light-dark(#2e9b48, #5fd48a);
+  /* The selection on a highlighted square: a yellow ring inside, glowing just outside. */
+  --select-halo:
+    inset 0 0 0 3px light-dark(#f2c200, #e8b923),
+    0 0 6px 2px light-dark(rgb(255 200 0 / 85%), rgb(232 185 35 / 75%));
   --focus-ring: light-dark(#2f6fde, #7aa7f5);
   --error: light-dark(#c62828, #ef6461);
   --warning: light-dark(#b36b00, #f0b43c);

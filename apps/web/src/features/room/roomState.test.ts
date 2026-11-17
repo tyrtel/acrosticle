@@ -1,5 +1,5 @@
-import type { Entry } from '@acrosticle/core';
-import type { ServerMessage } from '@acrosticle/protocol';
+import type { Entry } from '@gridicles/core';
+import type { ServerMessage } from '@gridicles/protocol';
 import { describe, expect, it } from 'vitest';
 import {
   initialRoomState,
@@ -42,7 +42,8 @@ const joined = () => server(initialRoomState, snapshot());
 describe('roomReducer', () => {
   it("loads a snapshot: puzzle, letters, members, and others' cursors", () => {
     const state = joined();
-    expect(state.puzzle?.clues).toHaveLength(1);
+    expect(state.puzzle?.kind).toBe('acrostic');
+    expect(state.puzzle?.kind === 'acrostic' && state.puzzle.puzzle.clues).toHaveLength(1);
     expect(state.confirmed).toEqual({ 1: 'Q' });
     expect(state.version).toBe(5);
     expect(state.me).toBe('ada');

@@ -1,5 +1,5 @@
-import type { Puzzle } from '@acrosticle/core';
-import { parsePuzzleFile } from '@acrosticle/protocol';
+import type { Puzzle } from '@gridicles/acrostic';
+import { parseAcrosticFile } from '@gridicles/protocol';
 import { useId, useState, type ChangeEvent, type FormEvent } from 'react';
 import styles from './Editor.module.css';
 
@@ -21,7 +21,7 @@ export function ImportPuzzle({ onImport }: ImportPuzzleProps) {
       setError("That isn't valid JSON.");
       return;
     }
-    const result = parsePuzzleFile(data);
+    const result = parseAcrosticFile(data);
     if (result.ok) onImport(result.value);
     else setError(`That isn't a valid puzzle file: ${result.error}`);
   };

@@ -1,4 +1,5 @@
-import type { CellNumber, Clue } from '@acrosticle/core';
+import type { CellNumber } from '@gridicles/core';
+import type { Clue } from '@gridicles/acrostic';
 import { useId, useState } from 'react';
 import styles from './Editor.module.css';
 import { parseCellList } from './parseCellList';

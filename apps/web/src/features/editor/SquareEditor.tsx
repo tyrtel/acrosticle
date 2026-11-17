@@ -1,4 +1,4 @@
-import type { GridSquare } from '@acrosticle/core';
+import type { GridSquare } from '@gridicles/acrostic';
 import { useId } from 'react';
 import styles from './Editor.module.css';
 

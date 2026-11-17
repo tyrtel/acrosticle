@@ -11,6 +11,7 @@ export default defineConfig({
       'packages/*',
       'apps/web',
       'apps/worker',
+      'apps/worker/vitest.crossword.config.ts',
       { test: { name: 'scripts', environment: 'node', include: ['scripts/**/*.test.ts'] } },
     ],
     coverage: {

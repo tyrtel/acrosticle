@@ -1,13 +1,10 @@
+import { emptySolveState, normalizeEntry, setCell, type Entry } from '@gridicles/core';
 import {
   buildPuzzleIndex,
-  emptySolveState,
-  normalizeEntry,
   parseCompactGrid,
-  setCell,
-  type Entry,
   type Puzzle,
   type Selection,
-} from '@acrosticle/core';
+} from '@gridicles/acrostic';
 import { describe, expect, it } from 'vitest';
 import { initialSelection, reduceSolver } from './solverReducer';
 

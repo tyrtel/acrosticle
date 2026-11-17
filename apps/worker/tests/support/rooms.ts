@@ -2,9 +2,10 @@ import {
   parseServerMessage,
   PROTOCOL_VERSION,
   PROTOCOL_VERSION_PARAM,
+  type AcrosticFile,
   type PuzzleFile,
   type ServerMessage,
-} from '@acrosticle/protocol';
+} from '@gridicles/protocol';
 import { exports } from 'cloudflare:workers';
 import { expect } from 'vitest';
 import { signInAs } from './accounts';
@@ -16,7 +17,7 @@ export const BASE = 'https://acrosticle.test';
  *   4B  #  5A
  * Clue A = 3, 1, 5. Clue B = 4, 2.
  */
-export const tinyPuzzleFile: PuzzleFile = {
+export const tinyPuzzleFile: AcrosticFile = {
   title: 'Tiny',
   grid: { columns: 4, rows: ['1A 2B # 3A', '4B # 5A'] },
   clues: [

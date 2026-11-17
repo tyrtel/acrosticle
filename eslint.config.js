@@ -9,6 +9,7 @@ export default tseslint.config(
   {
     ignores: [
       '**/dist/**',
+      '**/dist-crossword/**',
       '**/coverage/**',
       '**/.wrangler/**',
       '**/worker-configuration.d.ts',
@@ -58,8 +59,31 @@ export default tseslint.config(
             { group: ['react', 'react-*'], message: 'core must not depend on React.' },
             { group: ['cloudflare:*'], message: 'core must not depend on Cloudflare APIs.' },
             {
-              group: ['@acrosticle/*'],
+              group: ['@gridicles/*'],
               message: 'core is the bottom layer; it imports nothing internal.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // Puzzle-type packages build on core only, and stay framework- and platform-agnostic too.
+  {
+    files: ['packages/acrostic/src/**/*.ts', 'packages/crossword/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['react', 'react-*'], message: 'Puzzle types must not depend on React.' },
+            {
+              group: ['cloudflare:*'],
+              message: 'Puzzle types must not depend on Cloudflare APIs.',
+            },
+            {
+              group: ['@gridicles/*', '!@gridicles/core'],
+              message: 'Puzzle-type packages import only @gridicles/core.',
             },
           ],
         },

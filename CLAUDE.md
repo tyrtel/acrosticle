@@ -4,7 +4,8 @@ Guidance for Claude (and any other contributor) working in this repository. Read
 
 ## Project
 
-**Acrosticle** is a web app for solving **acrostic puzzles** together in real time. Several people open
+**Gridicles** is two sites from one codebase for solving puzzles together in real time: **Acrosticle**
+for **acrostic puzzles** and **Crosswordicle** for **crosswords** (ADR 0006). Several people open
 the same puzzle "room" and see each other's entries instantly.
 
 How an acrostic works: a quotation is hidden in a numbered grid. Each clue's answer is written in
@@ -22,7 +23,7 @@ before starting a feature**, and update them when a decision changes.
 | Language                | TypeScript (strict), everywhere                                                                    |
 | Front end               | React 19 + Vite                                                                                    |
 | Real-time / back end    | Cloudflare Workers + Durable Objects (one `PuzzleRoom` object per room, WebSocket Hibernation API) |
-| Wire format             | JSON messages validated with Zod (`@acrosticle/protocol`)                                          |
+| Wire format             | JSON messages validated with Zod (`@gridicles/protocol`)                                           |
 | Unit + integration test | Vitest; React Testing Library (web); `@cloudflare/vitest-plugin` (worker, runs in real `workerd`)  |
 | End-to-end test         | Playwright                                                                                         |
 | Lint / format           | ESLint (typed, flat config) + Prettier                                                             |
@@ -52,9 +53,11 @@ apps/
     .dev.vars.example  Local secrets template (copy to .dev.vars; never commit .dev.vars)
     e2e.env            Settings for the e2e worker (sign-in off)
     tests/integration/ Tests run inside workerd against the real Worker + DOs
-    wrangler.jsonc     Worker config. Run `npm run cf-typegen -w @acrosticle/worker` after editing it
+    wrangler.jsonc     Worker config. Run `npm run cf-typegen -w @gridicles/worker` after editing it
 packages/
-  core/                Pure domain logic: puzzle model, solve state, validation. NO I/O, React or Cloudflare.
+  core/                Shared solving logic: entries, solve state, undo, highlights. NO I/O, React or Cloudflare.
+  acrostic/            Acrostic model, file format, validation, navigation (imports only core)
+  crossword/           Crossword model, .puz/.ipuz/JSON, numbering, validation, navigation (imports only core)
   protocol/            Client <-> server message schemas and parse/encode helpers
   parser/              Reads puzzle images with Claude (shared by the Worker and the eval script)
 tests/
@@ -70,7 +73,8 @@ docs/
 
 ## Architecture rules
 
-1. **Dependency direction is one-way:** `core` ← `protocol` ← `web` / `worker`. `core` imports nothing
+1. **Dependency direction is one-way:** `core` ← `acrostic` / `crossword` ← `protocol` ← `web` /
+   `worker`. Puzzle-type packages import only `core`. `core` imports nothing
    internal (enforced by ESLint). `web` and `worker` never import from each other.
 2. **Business logic goes in `packages/core`.** It is pure, deterministic and side-effect free, so the
    browser and the Durable Object can run the _same_ code. If you're writing puzzle rules inside a React
@@ -139,21 +143,21 @@ Rules:
 
 Use Node 24 (`nvm use`). Run from the repo root.
 
-| Command                                          | Purpose                                                                                            |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `npm install`                                    | Install all workspaces                                                                             |
-| `npm run dev`                                    | Vite (http://localhost:5173) + `wrangler dev` (:8787), `/api` proxied; applies local D1 migrations |
-| `npm run db:migrate:local -w @acrosticle/worker` | Apply D1 migrations locally (new migration: add `apps/worker/migrations/NNNN_name.sql`)            |
-| `npm test`                                       | All Vitest projects (unit + integration)                                                           |
-| `npm run test:unit`                              | Unit tests only                                                                                    |
-| `npm run test:integration`                       | Integration tests only                                                                             |
-| `npm run test:coverage`                          | Tests with coverage + thresholds                                                                   |
-| `npm run test:e2e`                               | Playwright, on its own ports 5174/8788 (first run: `npx playwright install chromium`)              |
-| `npm run typecheck`                              | `tsc --noEmit` everywhere                                                                          |
-| `npm run lint` / `lint:fix`                      | ESLint                                                                                             |
-| `npm run format`                                 | Prettier write                                                                                     |
-| `npm run check`                                  | typecheck + lint + format check + tests — **run before declaring work done**                       |
-| `npx vitest run --project core`                  | Run a single project (`core`, `protocol`, `web`, `worker`)                                         |
+| Command                                         | Purpose                                                                                            |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `npm install`                                   | Install all workspaces                                                                             |
+| `npm run dev`                                   | Vite (http://localhost:5173) + `wrangler dev` (:8787), `/api` proxied; applies local D1 migrations |
+| `npm run db:migrate:local -w @gridicles/worker` | Apply D1 migrations locally (new migration: add `apps/worker/migrations/NNNN_name.sql`)            |
+| `npm test`                                      | All Vitest projects (unit + integration)                                                           |
+| `npm run test:unit`                             | Unit tests only                                                                                    |
+| `npm run test:integration`                      | Integration tests only                                                                             |
+| `npm run test:coverage`                         | Tests with coverage + thresholds                                                                   |
+| `npm run test:e2e`                              | Playwright, on its own ports 5174/8788 (first run: `npx playwright install chromium`)              |
+| `npm run typecheck`                             | `tsc --noEmit` everywhere                                                                          |
+| `npm run lint` / `lint:fix`                     | ESLint                                                                                             |
+| `npm run format`                                | Prettier write                                                                                     |
+| `npm run check`                                 | typecheck + lint + format check + tests — **run before declaring work done**                       |
+| `npx vitest run --project core`                 | Run a single project (`core`, `protocol`, `web`, `worker`)                                         |
 
 ## Definition of done
 

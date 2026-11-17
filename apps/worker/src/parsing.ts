@@ -1,4 +1,4 @@
-import { hasErrors } from '@acrosticle/core';
+import { hasErrors } from '@gridicles/acrostic';
 import {
   anthropicSender,
   DEFAULT_EFFORT,
@@ -9,8 +9,8 @@ import {
   type Effort,
   type ClaudeSender,
   type ImageMediaType,
-} from '@acrosticle/parser';
-import type { ApiError, ParsePuzzleResponse } from '@acrosticle/protocol';
+} from '@gridicles/parser';
+import type { ApiError, ParsePuzzleResponse } from '@gridicles/protocol';
 import Anthropic from '@anthropic-ai/sdk';
 import { Buffer } from 'node:buffer';
 import { canCreate, getCurrentUser } from './auth';

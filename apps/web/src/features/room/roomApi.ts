@@ -1,15 +1,22 @@
-import { puzzleToCompact, type Puzzle } from '@acrosticle/core';
+import { puzzleToCompact, type Puzzle } from '@gridicles/acrostic';
+import { crosswordToFile, type Crossword } from '@gridicles/crossword';
 import {
   CreateRoomResponse,
   RoomInfoResponse,
   type CreateRoomRequest,
   type SampleId,
-} from '@acrosticle/protocol';
+} from '@gridicles/protocol';
 import { jsonBody, request, type ApiResult } from '../../lib/api';
 
 /** Creates a room for a (valid) puzzle and returns its id. Needs an allowlisted account. */
 export async function createRoom(puzzle: Puzzle): Promise<ApiResult<string>> {
   const body: CreateRoomRequest = { puzzle: puzzleToCompact(puzzle) };
+  return postRoom(body);
+}
+
+/** Creates a room for a (valid) crossword and returns its id. Needs an allowlisted account. */
+export async function createCrosswordRoom(crossword: Crossword): Promise<ApiResult<string>> {
+  const body: CreateRoomRequest = { puzzle: { kind: 'crossword', ...crosswordToFile(crossword) } };
   return postRoom(body);
 }
 

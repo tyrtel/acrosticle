@@ -1,7 +1,8 @@
-import { MAX_NAME_LENGTH, type RoomInfoResponse } from '@acrosticle/protocol';
+import { MAX_NAME_LENGTH, type RoomInfoResponse } from '@gridicles/protocol';
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { useSession } from '../account';
 import { CopyToSheetButton } from '../sheetCopy';
+import { CrosswordSolver } from '../crossword';
 import { Solver } from '../solver';
 import styles from './Room.module.css';
 import { getRoomInfo } from './roomApi';
@@ -152,15 +153,27 @@ function Room({ roomId, name, createSocket }: RoomProps) {
           {state.error}
         </p>
       )}
-      <Solver
-        puzzle={state.puzzle}
-        solve={solve}
-        onEdit={setCell}
-        marks={marks}
-        onMark={setMark}
-        peers={peers}
-        onSelectionChange={setPresence}
-      />
+      {state.puzzle.kind === 'crossword' ? (
+        <CrosswordSolver
+          puzzle={state.puzzle.puzzle}
+          solve={solve}
+          onEdit={setCell}
+          marks={marks}
+          onMark={setMark}
+          peers={peers}
+          onSelectionChange={setPresence}
+        />
+      ) : (
+        <Solver
+          puzzle={state.puzzle.puzzle}
+          solve={solve}
+          onEdit={setCell}
+          marks={marks}
+          onMark={setMark}
+          peers={peers}
+          onSelectionChange={setPresence}
+        />
+      )}
     </div>
   );
 }

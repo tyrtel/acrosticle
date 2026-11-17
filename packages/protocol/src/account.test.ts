@@ -4,12 +4,18 @@ import { MeResponse, MyRoomsResponse, signInPath } from './account';
 describe('MeResponse', () => {
   it('accepts signed-out and signed-in shapes', () => {
     expect(
-      MeResponse.safeParse({ user: null, canCreate: false, signInConfigured: true }).success,
+      MeResponse.safeParse({
+        user: null,
+        canCreate: false,
+        canStartSample: false,
+        signInConfigured: true,
+      }).success,
     ).toBe(true);
     expect(
       MeResponse.safeParse({
         user: { id: 'u1', name: 'Ada', email: 'ada@example.com', picture: null },
         canCreate: true,
+        canStartSample: true,
         signInConfigured: true,
       }).success,
     ).toBe(true);
@@ -20,6 +26,8 @@ describe('MyRoomsResponse', () => {
   it('requires valid room ids', () => {
     const room = {
       roomId: 'AbCdEfGhIjKlMnOpQrSt_-',
+      kind: 'crossword',
+      url: 'https://crosswordicle.test/r/AbCdEfGhIjKlMnOpQrSt_-',
       title: null,
       createdAt: 1,
       updatedAt: 2,
@@ -27,6 +35,21 @@ describe('MyRoomsResponse', () => {
     };
     expect(MyRoomsResponse.safeParse({ rooms: [room] }).success).toBe(true);
     expect(MyRoomsResponse.safeParse({ rooms: [{ ...room, roomId: 'x' }] }).success).toBe(false);
+  });
+
+  it("requires each room's kind and address", () => {
+    const room = {
+      roomId: 'AbCdEfGhIjKlMnOpQrSt_-',
+      title: null,
+      createdAt: 1,
+      updatedAt: 2,
+      createdByMe: false,
+    };
+    expect(MyRoomsResponse.safeParse({ rooms: [room] }).success).toBe(false);
+    expect(
+      MyRoomsResponse.safeParse({ rooms: [{ ...room, kind: 'sudoku', url: 'https://a.test/r/x' }] })
+        .success,
+    ).toBe(false);
   });
 
   it('requires the activity time and the created-by-me flag', () => {

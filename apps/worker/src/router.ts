@@ -1,20 +1,22 @@
-import { hasErrors, puzzleFromCompact, validatePuzzle } from '@acrosticle/core';
 import {
   CreateRoomRequest,
   ROOM_ID_PATTERN,
   validateWith,
   type ApiError,
   type CreateRoomResponse,
+  puzzleKindOf,
   type PuzzleFile,
   type RoomInfoResponse,
-} from '@acrosticle/protocol';
-import { appOrigin, canCreate, getCurrentUser } from './auth';
+} from '@gridicles/protocol';
+import { appOrigin, canCreate, canStartSample, getCurrentUser } from './auth';
 import { finishGoogleSignIn, logout, me, myRooms, startGoogleSignIn } from './authRoutes';
 import { deleteRoomRecords, recordRoom, recordVisit, roomCreator } from './db';
 import { ROOM_ID_HEADER } from './room/PuzzleRoom';
 import { parsePuzzle } from './parsing';
 import { newRoomId } from './roomId';
+import { checkPuzzle } from './puzzleKinds';
 import { SAMPLE_PUZZLES } from './samples';
+import { siteOf } from './sites';
 
 /** Puzzle files are a few KB; anything much larger is a mistake or abuse. */
 export const MAX_CREATE_BODY_BYTES = 100_000;
@@ -88,7 +90,15 @@ async function createRoom(request: Request, env: Env): Promise<Response> {
 
   let puzzle: PuzzleFile;
   if ('sample' in parsed.value) {
-    // Anyone may start a room for a built-in sample; the puzzle is the server's own copy.
+    // Samples need an allowlisted account too (no guest room creation); the puzzle is the
+    // server's own copy.
+    if (!canStartSample(user, env)) {
+      if (!user) return apiError(401, 'Sign in to start a puzzle.');
+      return apiError(
+        403,
+        `Your account (${user.email}) isn't enabled for starting puzzles yet. Ask the site owner to add it.`,
+      );
+    }
     puzzle = SAMPLE_PUZZLES[parsed.value.sample];
   } else {
     if (!user) return apiError(401, 'Sign in to create a room for your own puzzle.');
@@ -98,9 +108,23 @@ async function createRoom(request: Request, env: Env): Promise<Response> {
         `Your account (${user.email}) isn't enabled for creating puzzles yet. Ask the site owner to add it.`,
       );
     }
-    const issues = puzzleIssues(parsed.value.puzzle);
-    if (issues) return issues;
     puzzle = parsed.value.puzzle;
+  }
+
+  // Each site holds one kind of puzzle (see sites.ts).
+  const site = siteOf(request, env);
+  const kind = puzzleKindOf(puzzle);
+  if (kind !== site.kind) {
+    const article = kind === 'acrostic' ? 'an' : 'a';
+    return apiError(400, `This site is for ${site.kind}s; that puzzle is ${article} ${kind}.`);
+  }
+  const checked = checkPuzzle(puzzle);
+  if (!checked.ok) {
+    return apiError(
+      checked.status,
+      checked.error,
+      checked.issues ? [...checked.issues] : undefined,
+    );
   }
 
   const roomId = newRoomId();
@@ -109,25 +133,14 @@ async function createRoom(request: Request, env: Env): Promise<Response> {
   if (!created) return apiError(500, 'Could not create the room. Please try again.');
   await recordRoom(env.DB, {
     roomId,
+    kind,
     createdBy,
-    title: puzzle.title ?? null,
+    title: checked.puzzle.title,
     createdAt: Date.now(),
   });
 
   const response: CreateRoomResponse = { roomId };
   return Response.json(response, { status: 201 });
-}
-
-/** A 400/422 response if the puzzle can't be used, or null if it's fine. */
-function puzzleIssues(file: PuzzleFile): Response | null {
-  const converted = puzzleFromCompact(file);
-  if (!converted.ok) return apiError(400, `Invalid puzzle: ${converted.error}`);
-  const issues = validatePuzzle(converted.puzzle);
-  if (!hasErrors(issues)) return null;
-  const errors = issues
-    .filter((issue) => issue.severity === 'error')
-    .map(({ code, message }) => ({ code, message }));
-  return apiError(422, 'The puzzle has errors. Fix them before creating a room.', errors);
 }
 
 /** WebSocket upgrade into a room; signed-in users get the room added to My puzzles. */

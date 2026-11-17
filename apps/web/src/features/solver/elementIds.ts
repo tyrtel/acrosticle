@@ -1,4 +1,4 @@
-import type { CellNumber } from '@acrosticle/core';
+import type { CellNumber } from '@gridicles/core';
 
 /** DOM ids for the cursor targets, used for aria-activedescendant and scrolling. */
 export const gridSquareId = (cell: CellNumber) => `grid-square-${cell}`;

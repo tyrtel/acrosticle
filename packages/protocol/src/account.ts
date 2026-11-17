@@ -14,6 +14,8 @@ export const MeResponse = z.object({
   user: AccountUser.nullable(),
   /** Whether this user may create rooms for their own puzzles (signed in and on the allowlist). */
   canCreate: z.boolean(),
+  /** Whether this user may start a room for a built-in sample (also allowlisted only). */
+  canStartSample: z.boolean(),
   /** Whether Google sign-in is set up on this server. */
   signInConfigured: z.boolean(),
 });
@@ -24,6 +26,9 @@ export const MyRoomsResponse = z.object({
   rooms: z.array(
     z.object({
       roomId: RoomId,
+      kind: z.enum(['acrostic', 'crossword']),
+      /** The room's address, on its own site (acrostics and crosswords live on different sites). */
+      url: z.url(),
       title: z.string().nullable(),
       createdAt: z.number().int(),
       /** When anyone last edited the room (to within about 30 seconds). */

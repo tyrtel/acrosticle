@@ -1,4 +1,4 @@
-import { firstCharacter } from '@acrosticle/core';
+import { firstCharacter } from '@gridicles/core';
 import type { ServerMessage } from './messages';
 
 /**

@@ -1,5 +1,5 @@
 import type { Entry } from './entries';
-import type { CellNumber } from './puzzle';
+import type { CellNumber } from './cells';
 import { getCell, type CellEdit, type SolveState } from './solveState';
 
 /** One of your own edits: what a square held before, and what you put there. */

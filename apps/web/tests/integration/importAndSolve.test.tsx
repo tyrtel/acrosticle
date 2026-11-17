@@ -39,10 +39,13 @@ describe('importing, fixing and solving a puzzle', () => {
   });
 
   it('shows why a room could not be created', async () => {
+    backend.signIn();
     backend.failNextCreate = { status: 503, error: 'The server is busy. Try again soon.' };
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: 'Try the sample puzzle' }));
+    const sampleButton = await screen.findByRole('button', { name: 'Try the sample puzzle' });
+    await vi.waitFor(() => expect(sampleButton).toBeEnabled());
+    await user.click(sampleButton);
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'The server is busy. Try again soon.',
     );

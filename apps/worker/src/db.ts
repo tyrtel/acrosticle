@@ -1,3 +1,4 @@
+import type { PuzzleKind } from '@gridicles/protocol';
 import { randomToken, sha256Hex } from './encoding';
 
 /** Database access for accounts, sessions and the room list (D1, see migrations/). */
@@ -120,19 +121,26 @@ export async function deleteSession(db: D1Database, token: string): Promise<void
 
 export async function recordRoom(
   db: D1Database,
-  room: { roomId: string; createdBy: string | null; title: string | null; createdAt: number },
+  room: {
+    roomId: string;
+    kind: PuzzleKind;
+    createdBy: string | null;
+    title: string | null;
+    createdAt: number;
+  },
 ): Promise<void> {
   await db
     .prepare(
-      'INSERT INTO rooms (room_id, created_by, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO rooms (room_id, kind, created_by, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
     )
-    .bind(room.roomId, room.createdBy, room.title, room.createdAt, room.createdAt)
+    .bind(room.roomId, room.kind, room.createdBy, room.title, room.createdAt, room.createdAt)
     .run();
 }
 
 /** One entry in My puzzles. */
 export interface MyRoom {
   readonly roomId: string;
+  readonly kind: PuzzleKind;
   readonly title: string | null;
   readonly createdAt: number;
   readonly updatedAt: number;
@@ -143,7 +151,7 @@ export interface MyRoom {
 export async function listMyRooms(db: D1Database, userId: string): Promise<MyRoom[]> {
   const { results } = await db
     .prepare(
-      `SELECT room_id, title, created_at, COALESCE(updated_at, created_at) AS updated_at,
+      `SELECT room_id, kind, title, created_at, COALESCE(updated_at, created_at) AS updated_at,
               created_by = ?1 AS created_by_me
        FROM rooms
        WHERE created_by = ?1 OR room_id IN (SELECT room_id FROM room_visits WHERE user_id = ?1)
@@ -153,6 +161,7 @@ export async function listMyRooms(db: D1Database, userId: string): Promise<MyRoo
     .bind(userId)
     .all<{
       room_id: string;
+      kind: string;
       title: string | null;
       created_at: number;
       updated_at: number;
@@ -160,6 +169,7 @@ export async function listMyRooms(db: D1Database, userId: string): Promise<MyRoo
     }>();
   return results.map((r) => ({
     roomId: r.room_id,
+    kind: r.kind === 'crossword' ? 'crossword' : 'acrostic',
     title: r.title,
     createdAt: r.created_at,
     updatedAt: r.updated_at,

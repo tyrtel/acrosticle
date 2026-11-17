@@ -11,3 +11,4 @@ the decision. Write a new one that supersedes it.
 | [0003](0003-google-sign-in.md)          | Google sign-in in our own Worker  | Accepted |
 | [0004](0004-image-parsing.md)           | Reading puzzle images with Claude | Accepted |
 | [0005](0005-multi-character-entries.md) | Multi-character entries           | Accepted |
+| [0006](0006-multiple-puzzle-types.md)   | Multiple puzzle types             | Accepted |

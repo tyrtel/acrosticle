@@ -1,4 +1,4 @@
-import { signInPath } from '@acrosticle/protocol';
+import { signInPath } from '@gridicles/protocol';
 import styles from './Account.module.css';
 import { useSession } from './sessionContext';
 

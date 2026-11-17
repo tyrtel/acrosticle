@@ -1,6 +1,8 @@
-# Acrosticle
+# Gridicles: Acrosticle and Crosswordicle
 
-Solve **acrostic puzzles** together, in real time.
+Solve **acrostic puzzles** (Acrosticle) and **crosswords** (Crosswordicle) together, in real time.
+One codebase, deployed as two sites that share accounts and sign-in (see
+[ADR 0006](docs/adr/0006-multiple-puzzle-types.md)).
 
 Open a puzzle, share the link, and everyone in the room sees each other's letters as they're typed.
 Filling a clue answer fills the matching squares in the quote grid, and vice versa.
@@ -12,7 +14,7 @@ Filling a clue answer fills the matching squares in the quote grid, and vice ver
 
 - **Front end:** React 19, TypeScript, Vite
 - **Real-time back end:** Cloudflare Workers + Durable Objects (WebSockets)
-- **Shared code:** `@acrosticle/core` (puzzle logic) and `@acrosticle/protocol` (message schemas, Zod)
+- **Shared code:** `@gridicles/core` (puzzle logic) and `@gridicles/protocol` (message schemas, Zod)
 - **Testing:** Vitest, React Testing Library, Cloudflare's Vitest plugin (tests run in `workerd`), Playwright
 
 ## Getting started
@@ -45,6 +47,9 @@ works, and Wrangler warns about the missing secrets.
 
 `npm run dev` applies the local database migrations (Cloudflare D1) before starting the Worker.
 
+To run Crosswordicle instead, use `npm run dev:crossword` (web <http://localhost:5175>, Worker
+<http://localhost:8789>). Run one site at a time locally; both use the same local database.
+
 ### Image parsing (optional locally)
 
 "Upload a puzzle image" needs an Anthropic API key and costs money per image. See
@@ -61,7 +66,8 @@ restart `npm run dev`, then `npm run doctor:signin` to check.
 
 | Command                    | Description                                                  |
 | -------------------------- | ------------------------------------------------------------ |
-| `npm run dev`              | Run web + worker locally                                     |
+| `npm run dev`              | Run web + worker locally (Acrosticle)                        |
+| `npm run dev:crossword`    | Run web + worker locally as Crosswordicle                    |
 | `npm run build`            | Production build of the web app                              |
 | `npm test`                 | All unit and integration tests                               |
 | `npm run test:unit`        | Unit tests only                                              |
@@ -88,8 +94,11 @@ apps/
   web/        React front end
   worker/     Cloudflare Worker + PuzzleRoom Durable Object
 packages/
-  core/       Pure acrostic domain logic (no I/O, no framework)
-  protocol/   WebSocket message schemas shared by web and worker
+  core/       Shared solving logic: entries, solve state, undo, highlights (no I/O, no framework)
+  acrostic/   Acrostic model, file format, validation and navigation
+  crossword/  Crossword model, .puz/.ipuz/JSON formats, numbering, validation and navigation
+  protocol/   WebSocket message and file schemas shared by web and worker
+  parser/     Reads acrostic images with Claude
 tests/
   e2e/        Playwright tests
   fixtures/   Shared test data
@@ -105,15 +114,9 @@ standards.
 
 ## Deployment
 
-The Worker deploys with Wrangler:
-
-```bash
-npx wrangler login
-npm run deploy -w @acrosticle/worker
-```
-
-Hosting for the web app (Workers static assets or Cloudflare Pages) is still to be decided. See
-[`docs/adr/`](docs/adr/).
+`npm run deploy` builds the web app for both sites, applies database migrations, deploys both Workers
+(Acrosticle and Crosswordicle, `wrangler deploy --env crossword`) and smoke-tests both. Log in first with
+`npx wrangler login`.
 
 ## Contributing
 

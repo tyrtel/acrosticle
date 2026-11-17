@@ -1,5 +1,5 @@
-import type { CellEdit, CellNumber, MarkEdit, Marks, SolveState } from '@acrosticle/core';
-import type { ServerMessage } from '@acrosticle/protocol';
+import type { CellEdit, CellNumber, MarkEdit, Marks, SolveState } from '@gridicles/core';
+import type { ServerMessage } from '@gridicles/protocol';
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import type { PeerMap } from '../../components/PeerTag';
 import { RoomConnection, roomSocketUrl, type SocketLike } from './RoomConnection';

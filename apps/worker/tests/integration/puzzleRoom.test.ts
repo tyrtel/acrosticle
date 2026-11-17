@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_ENTRY_LENGTH } from '@acrosticle/core';
-import { OUTDATED_CLIENT_MESSAGE } from '@acrosticle/protocol';
+import { MAX_ENTRY_LENGTH } from '@gridicles/core';
+import { OUTDATED_CLIENT_MESSAGE } from '@gridicles/protocol';
 import { createRoom, TestClient, tinyPuzzleFile } from '../support/rooms';
 
 describe('PuzzleRoom', () => {

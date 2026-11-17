@@ -1,8 +1,9 @@
-import type { CellNumber, GridSquare, Marks, PuzzleIndex, SolveState } from '@acrosticle/core';
-import { getCell } from '@acrosticle/core';
-import { useCallback, type MouseEvent } from 'react';
+import type { CellNumber, Marks, SolveState } from '@gridicles/core';
+import type { PuzzleIndex } from '@gridicles/acrostic';
+import { getCell } from '@gridicles/core';
+import { useCallback, useMemo, type MouseEvent } from 'react';
 import { describePeers, type PeerMap } from '../../components/PeerTag';
-import { PuzzleGrid, type SquareView } from '../../components/PuzzleGrid';
+import { acrosticLayout, PuzzleGrid, type SquareView } from '../../components/PuzzleGrid';
 import { gridSquareId } from './elementIds';
 
 export interface GridProps {
@@ -38,7 +39,10 @@ export function Grid({
 }: GridProps) {
   const highlighted = new Set(highlightCells);
 
-  const viewSquare = (square: GridSquare): SquareView => {
+  const layout = useMemo(() => acrosticLayout(index.puzzle.grid), [index]);
+  const viewSquare = (gridIndex: number): SquareView => {
+    const square = index.puzzle.grid.squares[gridIndex];
+    if (!square) return { ariaLabel: '' };
     switch (square.kind) {
       case 'block':
         return { ariaLabel: 'Black square' };
@@ -76,7 +80,7 @@ export function Grid({
 
   return (
     <PuzzleGrid
-      grid={index.puzzle.grid}
+      grid={layout}
       label="Quotation grid"
       viewSquare={viewSquare}
       onSquareClick={onSquareClick}

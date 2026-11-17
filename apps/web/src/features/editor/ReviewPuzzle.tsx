@@ -5,13 +5,12 @@ import {
   replaceSquare,
   updateClue,
   validatePuzzle,
-  type GridSquare,
   type IssueSeverity,
   type Puzzle,
   type SuggestedFix,
-} from '@acrosticle/core';
+} from '@gridicles/acrostic';
 import { useCallback, useMemo, useState } from 'react';
-import { PuzzleGrid, type SquareView } from '../../components/PuzzleGrid';
+import { acrosticLayout, PuzzleGrid, type SquareView } from '../../components/PuzzleGrid';
 import { downloadJson, slugify } from '../../lib/download';
 import { ClueEditor } from './ClueEditor';
 import styles from './Editor.module.css';
@@ -54,7 +53,10 @@ export function ReviewPuzzle({ initialPuzzle, notes = [], onStart }: ReviewPuzzl
     return { squareSeverity, flaggedClues };
   }, [issues]);
 
-  const viewSquare = (square: GridSquare, gridIndex: number): SquareView => {
+  const layout = useMemo(() => acrosticLayout(puzzle.grid), [puzzle.grid]);
+  const viewSquare = (gridIndex: number): SquareView => {
+    const square = puzzle.grid.squares[gridIndex];
+    if (!square) return { ariaLabel: '' };
     const severity = squareSeverity.get(gridIndex);
     const problem = severity ? `, has ${severity === 'info' ? 'a note' : `an ${severity}`}` : '';
     const name =
@@ -109,7 +111,7 @@ export function ReviewPuzzle({ initialPuzzle, notes = [], onStart }: ReviewPuzzl
       <div className={styles.layout}>
         <div className={styles.gridPane}>
           <PuzzleGrid
-            grid={puzzle.grid}
+            grid={layout}
             label="Puzzle grid"
             viewSquare={viewSquare}
             onSquareClick={setSelected}

@@ -1,16 +1,24 @@
-import { validatePuzzle } from '@acrosticle/core';
+import { validatePuzzle } from '@gridicles/acrostic';
 import { describe, expect, it } from 'vitest';
 import sample from '../../../samples/puzzles/diplo-crostic-37.json';
-import { parsePuzzleFile } from './puzzleFile';
+import mini from '../../../samples/puzzles/gridicles-mini-1.json';
+import {
+  parseAcrosticFile,
+  parseCrosswordFile,
+  publicPuzzleFile,
+  PuzzleFile,
+  puzzleKindOf,
+  puzzleTitleOf,
+} from './puzzleFile';
 
 const minimal = {
   grid: { columns: 2, rows: ['1A 2A'] },
   clues: [{ label: 'A', text: 'Clue', cells: [1, 2] }],
 };
 
-describe('parsePuzzleFile', () => {
+describe('parseAcrosticFile', () => {
   it('reads the sample puzzle into a valid puzzle', () => {
-    const result = parsePuzzleFile(sample);
+    const result = parseAcrosticFile(sample);
     if (!result.ok) throw new Error(result.error);
     expect(result.value.title).toBe('Diplo-Crostic No. 37');
     expect(result.value.constructedBy).toBe('Carol Becker');
@@ -19,7 +27,7 @@ describe('parsePuzzleFile', () => {
   });
 
   it('ignores unknown fields', () => {
-    const result = parsePuzzleFile({ ...minimal, $comment: 'hi', errata: [] });
+    const result = parseAcrosticFile({ ...minimal, $comment: 'hi', errata: [] });
     expect(result.ok && Object.keys(result.value)).toEqual(['grid', 'clues']);
   });
 
@@ -30,11 +38,68 @@ describe('parsePuzzleFile', () => {
     ['no rows', { ...minimal, grid: { columns: 2, rows: [] } }],
     ['non-integer blank', { ...minimal, clues: [{ label: 'A', text: 'x', cells: [1.5] }] }],
   ])('rejects %s', (_label, data) => {
-    expect(parsePuzzleFile(data).ok).toBe(false);
+    expect(parseAcrosticFile(data).ok).toBe(false);
   });
 
   it('reports grid format errors', () => {
-    const result = parsePuzzleFile({ ...minimal, grid: { columns: 2, rows: ['1A x'] } });
+    const result = parseAcrosticFile({ ...minimal, grid: { columns: 2, rows: ['1A x'] } });
     expect(result).toEqual({ ok: false, error: 'Row 1: unrecognized square "x"' });
+  });
+});
+
+describe('PuzzleFile', () => {
+  it('reads a file without a kind as an acrostic, and a crossword by its kind', () => {
+    const acrostic = PuzzleFile.parse(minimal);
+    expect(puzzleKindOf(acrostic)).toBe('acrostic');
+    const crossword = PuzzleFile.parse(mini);
+    expect(puzzleKindOf(crossword)).toBe('crossword');
+    expect(puzzleTitleOf(crossword)).toBe('Gridicles Mini No. 1');
+  });
+
+  it('rejects a crossword file with an acrostic shape, and the reverse', () => {
+    expect(PuzzleFile.safeParse({ ...minimal, kind: 'crossword' }).success).toBe(false);
+    expect(PuzzleFile.safeParse({ ...mini, kind: 'acrostic' }).success).toBe(false);
+  });
+
+  it('bounds crossword sizes and text', () => {
+    expect(PuzzleFile.safeParse({ ...mini, grid: Array(41).fill('A') }).success).toBe(false);
+    expect(
+      PuzzleFile.safeParse({
+        ...mini,
+        clues: { across: [{ number: 1, text: 'x'.repeat(2001) }], down: [] },
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('publicPuzzleFile', () => {
+  it('removes crossword answers, keeping black squares and markings', () => {
+    const file = PuzzleFile.parse({ ...mini, rebus: { 13: 'HEART' }, circled: [1] });
+    expect(publicPuzzleFile(file)).toEqual({
+      ...file,
+      rebus: undefined,
+      grid: ['...##', '....#', '.....', '#....', '##...'],
+    });
+    expect(publicPuzzleFile(file)).not.toHaveProperty('rebus');
+  });
+
+  it('leaves acrostics as they are', () => {
+    const file = PuzzleFile.parse(minimal);
+    expect(publicPuzzleFile(file)).toBe(file);
+  });
+});
+
+describe('parseCrosswordFile', () => {
+  it('reads the sample crossword', () => {
+    const result = parseCrosswordFile(mini);
+    expect(result.ok && result.value.width).toBe(5);
+  });
+
+  it('reports shape and grid errors', () => {
+    expect(parseCrosswordFile({ kind: 'crossword' }).ok).toBe(false);
+    expect(parseCrosswordFile({ ...mini, grid: ['AB', 'C'] })).toEqual({
+      ok: false,
+      error: 'Row 2 has 1 squares, but row 1 has 2.',
+    });
   });
 });

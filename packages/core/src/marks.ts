@@ -1,4 +1,4 @@
-import type { CellNumber } from './puzzle';
+import type { CellNumber } from './cells';
 
 /**
  * Squares someone has highlighted (shown green for everyone in the room).

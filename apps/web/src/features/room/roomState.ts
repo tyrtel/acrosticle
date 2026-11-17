@@ -2,7 +2,6 @@ import {
   applyEdit,
   emptySolveState,
   noMarks,
-  puzzleFromCompact,
   setCell,
   setMark,
   type CellEdit,
@@ -10,11 +9,11 @@ import {
   type Entry,
   type MarkEdit,
   type Marks,
-  type Puzzle,
   type SolveState,
-} from '@acrosticle/core';
-import type { Member, ServerMessage } from '@acrosticle/protocol';
+} from '@gridicles/core';
+import type { Member, ServerMessage } from '@gridicles/protocol';
 import type { Peer, PeerMap } from '../../components/PeerTag';
+import { readRoomPuzzle, type RoomPuzzle } from '../../lib/roomPuzzle';
 import type { ConnectionStatus } from './RoomConnection';
 
 /** An edit applied locally but not yet confirmed by the room. */
@@ -31,7 +30,7 @@ export interface PendingMark {
 
 export interface RoomState {
   readonly connection: ConnectionStatus;
-  readonly puzzle: Puzzle | null;
+  readonly puzzle: RoomPuzzle | null;
   /** Letters as last confirmed by the room. */
   readonly confirmed: SolveState;
   /** Our own edits still waiting for confirmation, shown on top of `confirmed`. */
@@ -102,7 +101,7 @@ export function roomReducer(state: RoomState, event: RoomEvent): RoomState {
 function applyServerMessage(state: RoomState, message: ServerMessage): RoomState {
   switch (message.type) {
     case 'snapshot': {
-      const converted = state.puzzle ? null : puzzleFromCompact(message.puzzle);
+      const converted = state.puzzle ? null : readRoomPuzzle(message.puzzle);
       if (converted && !converted.ok) {
         return { ...state, error: `The room's puzzle couldn't be read: ${converted.error}` };
       }
@@ -111,7 +110,7 @@ function applyServerMessage(state: RoomState, message: ServerMessage): RoomState
       return {
         ...state,
         // Keep the same puzzle object across reconnects so the solver doesn't reset.
-        puzzle: state.puzzle ?? (converted?.ok ? converted.puzzle : null),
+        puzzle: state.puzzle ?? (converted?.ok ? converted.value : null),
         confirmed,
         confirmedMarks: new Set(message.marks),
         version: message.version,

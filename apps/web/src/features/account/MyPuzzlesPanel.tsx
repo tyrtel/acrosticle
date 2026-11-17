@@ -1,5 +1,6 @@
-import type { MyRoomsResponse } from '@acrosticle/protocol';
-import { roomPath } from '@acrosticle/protocol';
+import type { MyRoomsResponse } from '@gridicles/protocol';
+import { roomPath } from '@gridicles/protocol';
+import { SITE, SITES } from '../../lib/site';
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Link } from '../../components/Link';
 import { shortDateTime } from '../../lib/dateTime';
@@ -133,7 +134,10 @@ function RoomItem({ room, onOpen, onDeleted }: RoomItemProps) {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const title = room.title ?? 'Untitled puzzle';
-  const link = `${window.location.origin}${roomPath(room.roomId)}`;
+  // Rooms live on their own site: acrostics on Acrosticle, crosswords on Crosswordicle.
+  const here = room.kind === SITE.kind;
+  const link = room.url;
+  const otherSite = SITES[room.kind].name;
 
   const copy = async () => {
     try {
@@ -156,9 +160,20 @@ function RoomItem({ room, onOpen, onDeleted }: RoomItemProps) {
   return (
     <li className={room.createdByMe ? `${styles.room} ${styles.mine}` : styles.room}>
       <div className={styles.titleRow}>
-        <Link href={roomPath(room.roomId)} className={styles.title} onClick={onOpen}>
-          {title}
-        </Link>
+        {here ? (
+          <Link href={roomPath(room.roomId)} className={styles.title} onClick={onOpen}>
+            {title}
+          </Link>
+        ) : (
+          <a href={link} className={styles.title}>
+            {title}
+          </a>
+        )}
+        {!here && (
+          <span className={styles.kindBadge}>
+            {room.kind === 'crossword' ? 'Crossword' : 'Acrostic'}
+          </span>
+        )}
         {room.createdByMe && (
           <span className={styles.mineBadge} title="You created this puzzle">
             <span aria-hidden="true">★</span>
@@ -195,7 +210,7 @@ function RoomItem({ room, onOpen, onDeleted }: RoomItemProps) {
           <button type="button" onClick={() => void copy()} aria-label={`Copy link to ${title}`}>
             {copied ? 'Copied!' : 'Copy link'}
           </button>
-          {room.createdByMe && (
+          {room.createdByMe && here && (
             <button
               type="button"
               onClick={() => setConfirming(true)}
@@ -203,6 +218,9 @@ function RoomItem({ room, onOpen, onDeleted }: RoomItemProps) {
             >
               Delete
             </button>
+          )}
+          {room.createdByMe && !here && (
+            <span className={styles.meta}>Delete it on {otherSite}</span>
           )}
         </div>
       )}

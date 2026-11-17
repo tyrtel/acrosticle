@@ -1,5 +1,5 @@
-import type { Entry } from '@acrosticle/core';
-import type { PuzzleFile } from '@acrosticle/protocol';
+import type { Entry } from '@gridicles/core';
+import type { PuzzleFile } from '@gridicles/protocol';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';

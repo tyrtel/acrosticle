@@ -1,0 +1,16 @@
+{
+  "name": "@gridicles/crossword",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pure crossword domain logic: the puzzle model, file formats (.puz, .ipuz, our JSON), numbering, validation and navigation. No React, no Cloudflare, no I/O.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gridicles/core": "0.0.0"
+  }
+}

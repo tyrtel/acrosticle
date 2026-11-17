@@ -1,5 +1,5 @@
 {
-  "name": "acrosticle",
+  "name": "gridicles",
   "private": true,
   "version": "0.0.0",
   "description": "Real-time collaborative acrostic puzzle solving.",
@@ -12,12 +12,13 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently -k -n web,worker -c cyan,magenta \"npm run dev -w @acrosticle/web\" \"npm run dev -w @acrosticle/worker\"",
+    "dev": "concurrently -k -n web,worker -c cyan,magenta \"npm run dev -w @gridicles/web\" \"npm run dev -w @gridicles/worker\"",
+    "dev:crossword": "concurrently -k -n web,worker -c cyan,magenta \"VITE_SITE=crossword npm run dev -w @gridicles/web\" \"npm run dev:crossword -w @gridicles/worker\"",
     "setup:signin": "node scripts/setup-signin.ts",
     "doctor:signin": "node scripts/doctor-signin.ts",
     "setup:claude": "node scripts/setup-claude.ts",
     "doctor:claude": "node scripts/doctor-claude.ts",
-    "eval:parse": "esbuild scripts/eval-parse.ts --bundle --platform=node --format=esm --external:@playwright/test --external:@anthropic-ai/sdk --log-level=warning --outfile=node_modules/.cache/acrosticle/eval-parse.mjs && node node_modules/.cache/acrosticle/eval-parse.mjs",
+    "eval:parse": "esbuild scripts/eval-parse.ts --bundle --platform=node --format=esm --external:@playwright/test --external:@anthropic-ai/sdk --log-level=warning --outfile=node_modules/.cache/gridicles/eval-parse.mjs && node node_modules/.cache/gridicles/eval-parse.mjs",
     "deploy": "node scripts/deploy.ts",
     "smoke": "node scripts/smoke.ts",
     "build": "npm run build --workspaces --if-present",

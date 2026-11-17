@@ -3,6 +3,7 @@ import {
   configProblems,
   configValue,
   deploySecrets,
+  missingCrosswordSecrets,
   PLACEHOLDER_DATABASE_ID,
 } from './deployConfig.ts';
 
@@ -45,5 +46,13 @@ describe('configValue / configProblems', () => {
   it('flags the placeholder database id and an empty client id', () => {
     expect(configProblems(config(PLACEHOLDER_DATABASE_ID, ''))).toHaveLength(2);
     expect(configProblems(config('1234-real', 'x.apps.googleusercontent.com'))).toEqual([]);
+  });
+});
+
+describe('missingCrosswordSecrets', () => {
+  it("lists what Crosswordicle doesn't have yet", () => {
+    expect(missingCrosswordSecrets([])).toEqual(['CREATOR_ALLOWLIST']);
+    expect(missingCrosswordSecrets(['OTHER'])).toEqual(['CREATOR_ALLOWLIST']);
+    expect(missingCrosswordSecrets(['CREATOR_ALLOWLIST'])).toEqual([]);
   });
 });

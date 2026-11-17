@@ -1,5 +1,5 @@
 {
-  "name": "@acrosticle/parser",
+  "name": "@gridicles/parser",
   "version": "0.0.0",
   "private": true,
   "description": "Reads a photo or scan of an acrostic into a puzzle file, using Claude's vision.",
@@ -11,8 +11,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acrosticle/core": "0.0.0",
-    "@acrosticle/protocol": "0.0.0",
+    "@gridicles/acrostic": "0.0.0",
+    "@gridicles/core": "0.0.0",
+    "@gridicles/protocol": "0.0.0",
     "@anthropic-ai/sdk": "^1.7.0"
   }
 }

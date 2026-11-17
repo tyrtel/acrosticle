@@ -1,4 +1,4 @@
-import type { IssueSeverity, SuggestedFix, ValidationIssue } from '@acrosticle/core';
+import type { IssueSeverity, SuggestedFix, ValidationIssue } from '@gridicles/acrostic';
 import styles from './Editor.module.css';
 
 export interface IssueListProps {

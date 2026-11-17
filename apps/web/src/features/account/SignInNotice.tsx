@@ -1,4 +1,4 @@
-import { SIGN_IN_RESULTS, type SignInResult } from '@acrosticle/protocol';
+import { SIGN_IN_RESULTS, type SignInResult } from '@gridicles/protocol';
 import { useState } from 'react';
 import styles from './Account.module.css';
 

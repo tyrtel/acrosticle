@@ -87,8 +87,18 @@ describe('POST /api/rooms with a puzzle file', () => {
 });
 
 describe('POST /api/rooms for a sample', () => {
-  it('works without signing in, using the server copy of the sample', async () => {
-    const res = await postRoom({ sample: 'diplo-crostic-37' });
+  it('needs an allowlisted account, like any room', async () => {
+    const guest = await postRoom({ sample: 'diplo-crostic-37' });
+    expect(guest.status).toBe(401);
+    expect(await guest.json()).toEqual({ error: 'Sign in to start a puzzle.' });
+    const { cookie } = await signInAs('cy@example.com', 'Cy');
+    const outsider = await postRoom({ sample: 'diplo-crostic-37' }, cookie);
+    expect(outsider.status).toBe(403);
+  });
+
+  it('uses the server copy of the sample', async () => {
+    const { cookie } = await signInAs();
+    const res = await postRoom({ sample: 'diplo-crostic-37' }, cookie);
     expect(res.status).toBe(201);
     const { roomId } = await res.json<{ roomId: string }>();
     const info = await exports.default.fetch(`${BASE}/api/rooms/${roomId}`);
@@ -96,7 +106,8 @@ describe('POST /api/rooms for a sample', () => {
   });
 
   it('ignores any puzzle sent alongside the sample id', async () => {
-    const res = await postRoom({ sample: 'diplo-crostic-37', puzzle: tinyPuzzleFile });
+    const { cookie } = await signInAs();
+    const res = await postRoom({ sample: 'diplo-crostic-37', puzzle: tinyPuzzleFile }, cookie);
     const { roomId } = await res.json<{ roomId: string }>();
     const info = await exports.default.fetch(`${BASE}/api/rooms/${roomId}`);
     expect(await info.json()).toMatchObject({ title: 'Diplo-Crostic No. 37' });
@@ -116,7 +127,11 @@ describe('cross-site requests', () => {
   it('allows POSTs from our own origin', async () => {
     const res = await exports.default.fetch(`${BASE}/api/rooms`, {
       method: 'POST',
-      headers: { Origin: 'https://acrosticle.test', 'Content-Type': 'application/json' },
+      headers: {
+        Origin: 'https://acrosticle.test',
+        'Content-Type': 'application/json',
+        Cookie: (await signInAs()).cookie,
+      },
       body: JSON.stringify({ sample: 'diplo-crostic-37' }),
     });
     expect(res.status).toBe(201);

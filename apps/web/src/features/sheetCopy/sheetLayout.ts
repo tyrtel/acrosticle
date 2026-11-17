@@ -1,4 +1,5 @@
-import { getCell, type Marks, type PuzzleIndex, type SolveState } from '@acrosticle/core';
+import { getCell, type Marks, type SolveState } from '@gridicles/core';
+import { type PuzzleIndex } from '@gridicles/acrostic';
 
 /** What a spreadsheet cell holds, which decides how it's drawn. */
 export type SheetCellKind =
@@ -14,7 +15,9 @@ export type SheetCellKind =
   /** A clue's answer letter: where letters live in the sheet. */
   | 'answer'
   /** The square number under an answer letter. */
-  | 'number';
+  | 'number'
+  /** A section heading, e.g. a crossword's "Across". */
+  | 'heading';
 
 /** A spot in the sheet, counted from 0 (row 0, column 0 is A1). */
 export interface SheetPosition {
@@ -27,6 +30,10 @@ export interface SheetCell {
   readonly text: string;
   /** Someone highlighted the square (green). */
   readonly marked?: boolean;
+  /** Printed with a circle (crosswords): drawn with a heavier border, since sheets have no circles. */
+  readonly circled?: boolean;
+  /** Printed shaded (crosswords). */
+  readonly shaded?: boolean;
   /** Letters-grid squares show this cell's value (a formula), so solving in the sheet fills both. */
   readonly copies?: SheetPosition;
   readonly columnSpan?: number;

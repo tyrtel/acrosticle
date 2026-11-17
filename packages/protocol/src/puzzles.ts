@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { PuzzleFile } from './puzzleFile';
+import { AcrosticFile } from './puzzleFile';
 
 /** Response to `POST /api/puzzles/parse`: a draft puzzle read from an image, to review. */
 export const ParsePuzzleResponse = z.object({
-  file: PuzzleFile,
+  file: AcrosticFile,
   /** What Claude was unsure about. */
   notes: z.array(z.string()),
   /** Validation problems in the draft (as printed); the review screen shows and fixes them. */

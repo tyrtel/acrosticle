@@ -54,8 +54,11 @@ export function setCookie(res: Response, name: string) {
 }
 
 /** Starts sign-in like a browser would; returns Google's URL params and the state cookie. */
-export async function startSignIn(returnTo?: string) {
-  const query = returnTo === undefined ? '' : `?returnTo=${encodeURIComponent(returnTo)}`;
+export async function startSignIn(returnTo?: string, returnOrigin?: string) {
+  const params = new URLSearchParams();
+  if (returnTo !== undefined) params.set('returnTo', returnTo);
+  if (returnOrigin !== undefined) params.set('returnOrigin', returnOrigin);
+  const query = params.size > 0 ? `?${params.toString()}` : '';
   // redirect: 'manual' so tests see our 302 instead of following it.
   const res = await exports.default.fetch(`${BASE}/api/auth/google${query}`, {
     redirect: 'manual',
@@ -87,6 +90,6 @@ export async function signInThroughGoogle(claims = validClaims(), returnTo = '/'
   mockGoogleToken(() => Response.json({ id_token: idToken(claims), access_token: 'x' }));
   const { params, oauthCookie } = await startSignIn(returnTo);
   const res = await callback({ code: 'auth-code', state: params.get('state') ?? '' }, oauthCookie);
-  const session = setCookie(res, 'acrosticle_session');
-  return { res, cookie: `acrosticle_session=${session.value ?? ''}` };
+  const session = setCookie(res, 'gridicles_session');
+  return { res, cookie: `gridicles_session=${session.value ?? ''}` };
 }

@@ -30,6 +30,18 @@
     // sample at about $0.004 per image; everything else is caught by validation.
     "PARSE_MODEL": "claude-haiku-5-5",
     "PARSE_EFFORT": "medium",
+    // Two sites, one codebase (docs/planning/crosswords.md): this Worker is Acrosticle
+    // (acrostics); `--env crossword` below deploys Crosswordicle (crosswords). They share the
+    // database, the session cookie (for COOKIE_DOMAIN) and sign-in (on SIGN_IN_ORIGIN, whose
+    // Google callback serves both).
+    "SITE_KIND": "acrostic",
+    "ACROSTIC_ORIGIN": "https://acrosticle.tyrtel.workers.dev",
+    "CROSSWORD_ORIGIN": "https://crosswordicle.tyrtel.workers.dev",
+    "SIGN_IN_ORIGIN": "https://acrosticle.tyrtel.workers.dev",
+    "COOKIE_DOMAIN": "tyrtel.workers.dev",
+    // Starting a sample room needs an allowlisted account, like any room. "on" lets guests
+    // start samples: only for the e2e test servers (e2e.env), never production.
+    "GUEST_SAMPLES": "off",
   },
   // Secrets: never in this file. Set with `wrangler secret put NAME` (locally: apps/worker/.dev.vars).
   // CREATOR_ALLOWLIST is comma-separated emails allowed to create rooms for their own puzzles;
@@ -51,4 +63,44 @@
     "bindings": [{ "name": "PUZZLE_ROOM", "class_name": "PuzzleRoom" }],
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PuzzleRoom"] }],
+
+  // Crosswordicle: the same code serving crosswords, with its own rooms (its own Durable Object
+  // namespace) and web build, sharing the database. Bindings and vars aren't inherited, so
+  // they're repeated here. Signs in through Acrosticle, so it needs no Google secret.
+  "env": {
+    "crossword": {
+      "name": "crosswordicle",
+      "assets": {
+        "directory": "../web/dist-crossword",
+        "not_found_handling": "single-page-application",
+        "run_worker_first": ["/api/*"],
+      },
+      "vars": {
+        "APP_ORIGIN": "https://crosswordicle.tyrtel.workers.dev",
+        "GOOGLE_CLIENT_ID": "767819622752-ps8a60je9mi6up825r0gngp81jgv84cf.apps.googleusercontent.com",
+        "PARSE_DAILY_BUDGET_USD": "5",
+        "PARSE_MODEL": "claude-haiku-5-5",
+        "PARSE_EFFORT": "medium",
+        "SITE_KIND": "crossword",
+        "ACROSTIC_ORIGIN": "https://acrosticle.tyrtel.workers.dev",
+        "CROSSWORD_ORIGIN": "https://crosswordicle.tyrtel.workers.dev",
+        "SIGN_IN_ORIGIN": "https://acrosticle.tyrtel.workers.dev",
+        "COOKIE_DOMAIN": "tyrtel.workers.dev",
+        "GUEST_SAMPLES": "off",
+      },
+      "secrets": { "required": ["CREATOR_ALLOWLIST"] },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "acrosticle",
+          "database_id": "54f74433-3676-418a-94f0-06fd14ec1398",
+          "migrations_dir": "migrations",
+        },
+      ],
+      "durable_objects": {
+        "bindings": [{ "name": "PUZZLE_ROOM", "class_name": "PuzzleRoom" }],
+      },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PuzzleRoom"] }],
+    },
+  },
 }

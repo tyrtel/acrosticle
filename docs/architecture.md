@@ -13,12 +13,16 @@
           │                         │  one per room, holds     │
           │                         │  sockets + solve state   │
           ▼                         └────────────┬─────────────┘
- @acrosticle/protocol  ◀── shared ──▶            │
- @acrosticle/core      ◀── shared ──▶ ───────────┘
+ @gridicles/protocol  ◀── shared ──▶            │
+ @gridicles/core      ◀── shared ──▶ ───────────┘
 ```
 
-- **`packages/core`**: pure domain logic: letters, solve state, and later puzzle parsing, grid↔clue
-  mapping, completion checks. Runs identically in the browser and in the Durable Object.
+- **Two sites, one codebase** (ADR 0006): Acrosticle (acrostics) and Crosswordicle (crosswords) are
+  the same Worker and web app deployed twice, sharing the database and sign-in.
+- **`packages/core`**: what every puzzle type shares: entries, solve state, undo history, highlights.
+  Runs identically in the browser and in the Durable Object.
+- **`packages/acrostic`**, **`packages/crossword`**: each puzzle type's model, file formats,
+  validation and cursor movement. Pure, like core.
 - **`packages/protocol`**: the WebSocket message contract (Zod schemas plus parse/encode). Both sides
   validate everything they receive.
 - **`apps/worker`**: a thin HTTP router plus the `PuzzleRoom` Durable Object. Each room is a single
@@ -28,19 +32,19 @@
 
 ## HTTP API
 
-| Method and path                 | Purpose                                                                                                                            |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/health`               | Liveness check                                                                                                                     |
-| `POST /api/rooms`               | Create a room: `{ sample: "diplo-crostic-37" }` (anyone) or `{ puzzle }` (signed-in, allowlisted; validated). Returns `{ roomId }` |
-| `GET /api/rooms/:id`            | Check a room exists before joining; `{ roomId, title }` or 404                                                                     |
-| `DELETE /api/rooms/:id`         | Delete a room for everyone (its creator only); members get `room/deleted`                                                          |
-| `POST /api/puzzles/parse`       | Read an uploaded image into a draft puzzle with Claude (allowlisted creators; per-person and daily limits)                         |
-| `GET /api/rooms/:id/ws`         | WebSocket upgrade into the room; `?v=3` announces the client's protocol version (ADR 0005)                                         |
-| `GET /api/auth/google`          | Start Google sign-in (`?returnTo=/path`)                                                                                           |
-| `GET /api/auth/google/callback` | Google returns here; sets the session cookie                                                                                       |
-| `POST /api/auth/logout`         | End the session                                                                                                                    |
-| `GET /api/me`                   | `{ user, canCreate, signInConfigured }`; extends an ageing session                                                                 |
-| `GET /api/me/rooms`             | Rooms the signed-in user created or joined, most recently active first                                                             |
+| Method and path                 | Purpose                                                                                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/health`               | Liveness check                                                                                                                           |
+| `POST /api/rooms`               | Create a room: `{ sample }` (anyone) or `{ puzzle }` (signed-in, allowlisted; validated; the site's own kind only). Returns `{ roomId }` |
+| `GET /api/rooms/:id`            | Check a room exists before joining; `{ roomId, title }` or 404                                                                           |
+| `DELETE /api/rooms/:id`         | Delete a room for everyone (its creator only); members get `room/deleted`                                                                |
+| `POST /api/puzzles/parse`       | Read an uploaded image into a draft puzzle with Claude (allowlisted creators; per-person and daily limits)                               |
+| `GET /api/rooms/:id/ws`         | WebSocket upgrade into the room; `?v=3` announces the client's protocol version (ADR 0005)                                               |
+| `GET /api/auth/google`          | Start Google sign-in (`?returnTo=/path`). On Crosswordicle, hands off to Acrosticle with `returnOrigin`                                  |
+| `GET /api/auth/google/callback` | Google returns here; sets the session cookie                                                                                             |
+| `POST /api/auth/logout`         | End the session                                                                                                                          |
+| `GET /api/me`                   | `{ user, canCreate, signInConfigured }`; extends an ageing session                                                                       |
+| `GET /api/me/rooms`             | Rooms the signed-in user created or joined, most recently active first                                                                   |
 
 Room ids are 128 random bits (22 base64url characters). The link is the access control for solving.
 

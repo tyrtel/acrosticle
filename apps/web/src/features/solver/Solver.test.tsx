@@ -3,14 +3,13 @@ import {
   emptySolveState,
   noMarks,
   setMark,
-  parseCompactGrid,
   type CellEdit,
   type CellNumber,
   type MarkEdit,
   type Entry,
-  type Puzzle,
   type SolveState,
-} from '@acrosticle/core';
+} from '@gridicles/core';
+import { parseCompactGrid, type Puzzle } from '@gridicles/acrostic';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';

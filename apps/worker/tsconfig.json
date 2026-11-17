@@ -1,7 +1,16 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["@cloudflare/vitest-plugin/types"]
+    "types": ["@cloudflare/vitest-plugin/types"],
+    // vitest.crossword.config.ts imports vitest.config.ts by its full name, as Vite's native
+    // config loader expects.
+    "allowImportingTsExtensions": true
   },
-  "include": ["src", "tests", "worker-configuration.d.ts", "vitest.config.ts"]
+  "include": [
+    "src",
+    "tests",
+    "worker-configuration.d.ts",
+    "vitest.config.ts",
+    "vitest.crossword.config.ts"
+  ]
 }

@@ -1,14 +1,18 @@
-import { buildPuzzleIndex, type Marks, type Puzzle, type SolveState } from '@acrosticle/core';
+import { type Marks, type SolveState } from '@gridicles/core';
+import { buildPuzzleIndex } from '@gridicles/acrostic';
+import { buildCrosswordIndex } from '@gridicles/crossword';
 import { useEffect, useState } from 'react';
 import { copyRich } from '../../lib/clipboard';
+import type { RoomPuzzle } from '../../lib/roomPuzzle';
+import { crosswordSheetLayout } from './crosswordSheetLayout';
 import { sheetClipboard } from './sheetClipboard';
-import { sheetLayout } from './sheetLayout';
+import { sheetLayout, type SheetLayout } from './sheetLayout';
 
 /** How long "Copied!" shows before the button reads "Copy to Sheet" again. */
 export const COPIED_FOR_MS = 2000;
 
 export interface CopyToSheetButtonProps {
-  readonly puzzle: Puzzle;
+  readonly puzzle: RoomPuzzle;
   readonly solve: SolveState;
   readonly marks: Marks;
 }
@@ -27,7 +31,7 @@ export function CopyToSheetButton({ puzzle, solve, marks }: CopyToSheetButtonPro
 
   const copy = async () => {
     // Built on click only: the layout covers every square, so don't redo it per keystroke.
-    const { html, text } = sheetClipboard(sheetLayout(buildPuzzleIndex(puzzle), solve, marks));
+    const { html, text } = sheetClipboard(layoutFor(puzzle, solve, marks));
     try {
       await copyRich(html, text);
       setStatus('copied');
@@ -45,4 +49,10 @@ export function CopyToSheetButton({ puzzle, solve, marks }: CopyToSheetButtonPro
       {status === 'copied' ? 'Copied!' : status === 'failed' ? "Couldn't copy" : 'Copy to Sheet'}
     </button>
   );
+}
+
+function layoutFor(room: RoomPuzzle, solve: SolveState, marks: Marks): SheetLayout {
+  return room.kind === 'crossword'
+    ? crosswordSheetLayout(buildCrosswordIndex(room.puzzle), solve, marks)
+    : sheetLayout(buildPuzzleIndex(room.puzzle), solve, marks);
 }

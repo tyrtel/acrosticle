@@ -1,8 +1,8 @@
-import type { PuzzleFile } from '@acrosticle/protocol';
+import type { AcrosticFile } from '@gridicles/protocol';
 import { describe, expect, it } from 'vitest';
 import { scoreParse, similarity } from './evalScore.ts';
 
-const truth: PuzzleFile = {
+const truth: AcrosticFile = {
   grid: { columns: 4, rows: ['1A 2B # 3A', '4B # 5A'] },
   clues: [
     { label: 'A', text: 'First clue', cells: [3, 1, 5] },
@@ -22,7 +22,7 @@ describe('scoreParse', () => {
   });
 
   it('counts misread numbers, labels, blanks and text', () => {
-    const parsed: PuzzleFile = {
+    const parsed: AcrosticFile = {
       grid: { columns: 4, rows: ['1A 2A # 8A', '4B # 5A'] },
       clues: [
         { label: 'A', text: 'first  CLUE', cells: [3, 1, 5] },
@@ -38,7 +38,7 @@ describe('scoreParse', () => {
   });
 
   it('notices a different grid shape, and missing clues', () => {
-    const parsed: PuzzleFile = { grid: { columns: 3, rows: ['1A 2B #'] }, clues: [] };
+    const parsed: AcrosticFile = { grid: { columns: 3, rows: ['1A 2B #'] }, clues: [] };
     const score = scoreParse(parsed, truth);
     expect(score.sameShape).toBe(false);
     expect(score.clueBlanks).toBe(0);

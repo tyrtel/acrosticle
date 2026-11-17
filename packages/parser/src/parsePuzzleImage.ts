@@ -1,5 +1,5 @@
-import { puzzleFromCompact, validatePuzzle, type ValidationIssue } from '@acrosticle/core';
-import { PuzzleFile, validateWith } from '@acrosticle/protocol';
+import { puzzleFromCompact, validatePuzzle, type ValidationIssue } from '@gridicles/acrostic';
+import { AcrosticFile, validateWith } from '@gridicles/protocol';
 import type Anthropic from '@anthropic-ai/sdk';
 import { costUsd, type TokenUsage } from './pricing';
 import { EXTRACTION_SCHEMA, SYSTEM_PROMPT } from './prompt';
@@ -73,7 +73,7 @@ interface RunFacts {
 export type ParseSuccess = RunFacts & {
   readonly ok: true;
   /** The draft puzzle, as printed (it may still have issues to fix in review). */
-  readonly file: PuzzleFile;
+  readonly file: AcrosticFile;
   readonly notes: readonly string[];
   readonly issues: readonly ValidationIssue[];
 };
@@ -184,7 +184,7 @@ export async function parsePuzzleImage(
 function readExtraction(
   text: string,
 ):
-  | { ok: true; file: PuzzleFile; notes: string[]; issues: ValidationIssue[] }
+  | { ok: true; file: AcrosticFile; notes: string[]; issues: ValidationIssue[] }
   | { ok: false; message: string } {
   const unreadable = {
     ok: false as const,
@@ -202,7 +202,7 @@ function readExtraction(
   const optional = (key: string) =>
     typeof value[key] === 'string' && value[key] !== '' ? { [key]: value[key] } : {};
 
-  const file = validateWith(PuzzleFile, {
+  const file = validateWith(AcrosticFile, {
     ...optional('title'),
     ...optional('constructedBy'),
     grid: { columns: value.columns, rows: value.rows },

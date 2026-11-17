@@ -1,4 +1,5 @@
-import { acrosticLetters, filledCount, type PuzzleIndex, type SolveState } from '@acrosticle/core';
+import { filledCount, type SolveState } from '@gridicles/core';
+import { acrosticLetters, type PuzzleIndex } from '@gridicles/acrostic';
 import styles from './AcrosticBar.module.css';
 
 export interface AcrosticBarProps {

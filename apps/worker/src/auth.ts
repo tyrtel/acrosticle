@@ -1,7 +1,8 @@
 import { readCookie } from './cookies';
 import { findSession, type Account } from './db';
 
-export const SESSION_COOKIE = 'acrosticle_session';
+/** Shared by both sites (see sites.ts), hence not named after either. */
+export const SESSION_COOKIE = 'gridicles_session';
 
 /** The signed-in account for a request, or null. */
 export async function getCurrentUser(
@@ -24,9 +25,26 @@ export function canCreate(account: Account | null, env: Pick<Env, 'CREATOR_ALLOW
   return allowed.includes(account.email.toLowerCase());
 }
 
-export function signInConfigured(
-  env: Pick<Env, 'GOOGLE_CLIENT_ID' | 'GOOGLE_CLIENT_SECRET'>,
+/** Whether sign-in works here: this site has Google credentials, or hands sign-in to the site that does. */
+/**
+ * Whether an account may start a room for a built-in sample. Like any room, that needs an
+ * allowlisted account, so guests can't spam room creation. `GUEST_SAMPLES=on` lifts this for
+ * guests; it's only for the e2e test servers (which have no sign-in), never production.
+ */
+export function canStartSample(
+  account: Account | null,
+  env: Pick<Env, 'CREATOR_ALLOWLIST'> & { GUEST_SAMPLES?: string },
 ): boolean {
+  return canCreate(account, env) || env.GUEST_SAMPLES === 'on';
+}
+
+export function signInConfigured(
+  env: Pick<Env, 'GOOGLE_CLIENT_ID' | 'GOOGLE_CLIENT_SECRET'> & {
+    APP_ORIGIN?: string;
+    SIGN_IN_ORIGIN?: string;
+  },
+): boolean {
+  if (env.SIGN_IN_ORIGIN && env.SIGN_IN_ORIGIN !== env.APP_ORIGIN) return true;
   return Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
 }
 

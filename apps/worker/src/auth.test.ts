@@ -20,6 +20,16 @@ describe('signInConfigured', () => {
     expect(signInConfigured({ GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: '' })).toBe(false);
     expect(signInConfigured({ GOOGLE_CLIENT_ID: '', GOOGLE_CLIENT_SECRET: 's' })).toBe(false);
   });
+
+  it('is configured on a site that hands sign-in to the other site', () => {
+    const env = { GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: '' };
+    expect(
+      signInConfigured({ ...env, APP_ORIGIN: 'https://b.test', SIGN_IN_ORIGIN: 'https://a.test' }),
+    ).toBe(true);
+    expect(
+      signInConfigured({ ...env, APP_ORIGIN: 'https://a.test', SIGN_IN_ORIGIN: 'https://a.test' }),
+    ).toBe(false);
+  });
 });
 
 describe('appOrigin', () => {

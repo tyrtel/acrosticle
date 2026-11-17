@@ -1,4 +1,4 @@
-import { ROOM_ID_PATTERN } from '@acrosticle/protocol';
+import { ROOM_ID_PATTERN } from '@gridicles/protocol';
 import { describe, expect, it } from 'vitest';
 import { newRoomId } from './roomId';
 

@@ -1,22 +1,25 @@
 {
-  "name": "@acrosticle/worker",
+  "name": "@gridicles/worker",
   "version": "0.0.0",
   "private": true,
   "description": "Cloudflare Worker + Durable Objects for real-time puzzle rooms.",
   "type": "module",
   "scripts": {
-    "dev": "npm run ensure-assets-dir && npm run db:migrate:local && wrangler dev --var APP_ORIGIN:http://localhost:5173",
+    "dev": "npm run ensure-assets-dir && npm run db:migrate:local && wrangler dev --var APP_ORIGIN:http://localhost:5173 ACROSTIC_ORIGIN:http://localhost:5173 CROSSWORD_ORIGIN:http://localhost:5175 SIGN_IN_ORIGIN:http://localhost:5173 COOKIE_DOMAIN:",
+    "dev:crossword": "npm run ensure-assets-dir && npm run db:migrate:local && wrangler dev --env crossword --port 8789 --var APP_ORIGIN:http://localhost:5175 ACROSTIC_ORIGIN:http://localhost:5173 CROSSWORD_ORIGIN:http://localhost:5175 SIGN_IN_ORIGIN:http://localhost:5173 COOKIE_DOMAIN:",
     "serve": "npm run ensure-assets-dir && wrangler dev",
     "db:migrate:local": "wrangler d1 migrations apply acrosticle --local",
     "db:migrate:remote": "wrangler d1 migrations apply acrosticle --remote",
     "cf-typegen": "wrangler types --strict-vars=false",
     "typecheck": "tsc --noEmit",
-    "ensure-assets-dir": "node -e \"require('node:fs').mkdirSync('../web/dist', { recursive: true })\""
+    "ensure-assets-dir": "node -e \"for (const d of ['../web/dist', '../web/dist-crossword']) require('node:fs').mkdirSync(d, { recursive: true })\""
   },
   "dependencies": {
-    "@acrosticle/core": "0.0.0",
-    "@acrosticle/parser": "0.0.0",
-    "@acrosticle/protocol": "0.0.0"
+    "@gridicles/acrostic": "0.0.0",
+    "@gridicles/core": "0.0.0",
+    "@gridicles/crossword": "0.0.0",
+    "@gridicles/parser": "0.0.0",
+    "@gridicles/protocol": "0.0.0"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.6.0",

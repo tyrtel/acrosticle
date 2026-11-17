@@ -1,5 +1,5 @@
-import type { MyRoomsResponse } from '@acrosticle/protocol';
-import { exports } from 'cloudflare:workers';
+import type { MyRoomsResponse } from '@gridicles/protocol';
+import { env, exports } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
 import { ROOM_DELETED_CLOSE_CODE } from '../../src/room/PuzzleRoom';
 import { signInAs } from '../support/accounts';
@@ -113,16 +113,20 @@ describe('DELETE /api/rooms/:id', () => {
     expect((await deleteRoom(roomId)).status).toBe(401);
   });
 
-  it("refuses to delete someone else's room, or an anonymous sample room", async () => {
+  it("refuses to delete someone else's room, or a room nobody created", async () => {
     const ada = await creator();
     const bo = await visitor('Bo');
     const adas = await createAs(ada.cookie);
     expect((await deleteRoom(adas, bo.cookie)).status).toBe(403);
 
-    const sample = (
-      await (await postRoom({ sample: 'diplo-crostic-37' })).json<{ roomId: string }>()
-    ).roomId;
-    expect((await deleteRoom(sample, ada.cookie)).status).toBe(403);
+    // Rooms from before samples needed an account have no creator.
+    const orphan = 'OrphanRoom000000000000';
+    await env.DB.prepare(
+      'INSERT INTO rooms (room_id, created_by, title, created_at, updated_at) VALUES (?, NULL, ?, 1, 1)',
+    )
+      .bind(orphan, 'Old sample')
+      .run();
+    expect((await deleteRoom(orphan, ada.cookie)).status).toBe(403);
     expect((await exports.default.fetch(`${BASE}/api/rooms/${adas}`)).status).toBe(200);
   });
 

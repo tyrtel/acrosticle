@@ -63,9 +63,10 @@
   background: var(--select);
 }
 
-/* Selected and highlighted: keep a green ring so the highlight still shows. */
+/* Selected and highlighted: stays green, with a yellow halo around its edges. */
 .list:not(.idle) .selected.marked .letter {
-  box-shadow: inset 0 0 0 3px var(--mark-ring);
+  background: var(--mark);
+  box-shadow: var(--select-halo);
 }
 
 .number {

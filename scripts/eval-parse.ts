@@ -32,8 +32,8 @@ import {
   MODELS,
   parsePuzzleImage,
   type ImageMediaType,
-} from '@acrosticle/parser';
-import { PuzzleFile, validateWith } from '@acrosticle/protocol';
+} from '@gridicles/parser';
+import { AcrosticFile, validateWith } from '@gridicles/protocol';
 import Anthropic from '@anthropic-ai/sdk';
 import { chromium } from '@playwright/test';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -72,8 +72,8 @@ const { values } = parseArgs({
 });
 
 /** The sample as printed (with its misprint put back): the parser should transcribe exactly. */
-function samplePrinted(): PuzzleFile {
-  const sample = JSON.parse(readFileSync(`${SAMPLE}.json`, 'utf8')) as PuzzleFile & {
+function samplePrinted(): AcrosticFile {
+  const sample = JSON.parse(readFileSync(`${SAMPLE}.json`, 'utf8')) as AcrosticFile & {
     errata?: { corrected: string; printed: string }[];
   };
   const rows = sample.grid.rows.map((row) =>
@@ -85,9 +85,9 @@ function samplePrinted(): PuzzleFile {
   return { ...sample, grid: { ...sample.grid, rows } };
 }
 
-function loadTruth(): PuzzleFile {
+function loadTruth(): AcrosticFile {
   if (!values.truth) return samplePrinted();
-  const parsed = validateWith(PuzzleFile, JSON.parse(readFileSync(values.truth, 'utf8')));
+  const parsed = validateWith(AcrosticFile, JSON.parse(readFileSync(values.truth, 'utf8')));
   if (!parsed.ok) throw new Error(`--truth isn't a puzzle file: ${parsed.error}`);
   return parsed.value;
 }

@@ -1,19 +1,21 @@
 import {
+  getCell,
+  type CellEdit,
+  type CellNumber,
+  type Entry,
+  type SolveState,
+} from '@gridicles/core';
+import {
   enterEntry,
   erase,
-  getCell,
   jumpToClue,
   moveInGrid,
   step,
-  type CellEdit,
-  type CellNumber,
   type Direction,
-  type Entry,
   type PuzzleIndex,
   type Selection,
-  type SolveState,
   type View,
-} from '@acrosticle/core';
+} from '@gridicles/acrostic';
 
 export type SolverAction =
   | { readonly type: 'select'; readonly cell: CellNumber; readonly view: View }

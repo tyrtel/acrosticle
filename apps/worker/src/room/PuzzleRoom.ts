@@ -1,4 +1,4 @@
-import { isEntry, puzzleFromCompact, type Entry } from '@acrosticle/core';
+import { isEntry, type Entry } from '@gridicles/core';
 import {
   encodeMessage,
   messageForVersion,
@@ -7,13 +7,15 @@ import {
   PROTOCOL_VERSION,
   protocolVersionOf,
   PuzzleFile,
+  publicPuzzleFile,
   validateWith,
   type ClientMessage,
   type Member,
   type ServerMessage,
-} from '@acrosticle/protocol';
+} from '@gridicles/protocol';
 import { DurableObject } from 'cloudflare:workers';
 import { touchRoom } from '../db';
+import { checkPuzzle } from '../puzzleKinds';
 import { pickColor } from './colors';
 
 const NORMAL_CLOSURE = 1000;
@@ -38,7 +40,8 @@ interface Attachment {
 
 interface RoomInfo {
   readonly puzzle: PuzzleFile;
-  readonly cellCount: number;
+  /** The cell numbers edits and highlights may name. */
+  readonly cells: ReadonlySet<number>;
 }
 
 /**
@@ -86,19 +89,16 @@ export class PuzzleRoom extends DurableObject<Env> {
    */
   initialize(roomId: string, puzzle: PuzzleFile, createdBy: string | null): boolean {
     if (this.readMeta('puzzle') !== null) return false;
-    const converted = puzzleFromCompact(puzzle);
-    if (!converted.ok) throw new Error(`initialize() got an invalid puzzle: ${converted.error}`);
-    const cellCount = converted.puzzle.grid.squares.filter((s) => s.kind === 'letter').length;
-
+    const checked = checkPuzzle(puzzle);
+    if (!checked.ok) throw new Error(`initialize() got an unusable puzzle: ${checked.error}`);
     this.ctx.storage.transactionSync(() => {
       this.writeMeta('roomId', roomId);
       this.writeMeta('puzzle', JSON.stringify(puzzle));
-      this.writeMeta('cellCount', String(cellCount));
       this.writeMeta('version', '0');
       if (createdBy !== null) this.writeMeta('createdBy', createdBy);
       this.writeMeta('createdAt', String(Date.now()));
     });
-    this.loaded = { puzzle, cellCount };
+    this.loaded = { puzzle, cells: checked.puzzle.cells };
     return true;
   }
 
@@ -207,7 +207,7 @@ export class PuzzleRoom extends DurableObject<Env> {
     { cell, value, clientSeq }: Extract<ClientMessage, { type: 'cell/set' }>,
   ): void {
     const room = this.room();
-    if (!room || cell > room.cellCount) {
+    if (!room?.cells.has(cell)) {
       this.send(ws, { type: 'error', message: `There is no square ${cell}.` });
       return;
     }
@@ -244,7 +244,7 @@ export class PuzzleRoom extends DurableObject<Env> {
     { cell, marked, clientSeq }: Extract<ClientMessage, { type: 'cell/mark' }>,
   ): void {
     const room = this.room();
-    if (!room || cell > room.cellCount) {
+    if (!room?.cells.has(cell)) {
       this.send(ws, { type: 'error', message: `There is no square ${cell}.` });
       return;
     }
@@ -300,7 +300,7 @@ export class PuzzleRoom extends DurableObject<Env> {
 
   private updatePresence(ws: WebSocket, me: Attachment, cell: number | null): void {
     const room = this.room();
-    if (cell !== null && (!room || cell > room.cellCount)) {
+    if (cell !== null && !room?.cells.has(cell)) {
       this.send(ws, { type: 'error', message: `There is no square ${cell}.` });
       return;
     }
@@ -324,7 +324,7 @@ export class PuzzleRoom extends DurableObject<Env> {
 
     return {
       type: 'snapshot',
-      puzzle: room.puzzle,
+      puzzle: publicPuzzleFile(room.puzzle),
       cells,
       marks,
       version: Number(this.readMeta('version') ?? '0'),
@@ -345,7 +345,9 @@ export class PuzzleRoom extends DurableObject<Env> {
     if (stored === null) return null;
     const puzzle = validateWith(PuzzleFile, JSON.parse(stored));
     if (!puzzle.ok) throw new Error(`Stored puzzle is invalid: ${puzzle.error}`);
-    this.loaded = { puzzle: puzzle.value, cellCount: Number(this.readMeta('cellCount')) };
+    const checked = checkPuzzle(puzzle.value);
+    if (!checked.ok) throw new Error(`Stored puzzle is unusable: ${checked.error}`);
+    this.loaded = { puzzle: puzzle.value, cells: checked.puzzle.cells };
     return this.loaded;
   }
 

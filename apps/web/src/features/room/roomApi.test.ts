@@ -1,4 +1,4 @@
-import { parseCompactGrid, type Puzzle } from '@acrosticle/core';
+import { parseCompactGrid, type Puzzle } from '@gridicles/acrostic';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRoom, createSampleRoom, getRoomInfo } from './roomApi';
 

@@ -5,7 +5,7 @@ import {
   PROTOCOL_VERSION_PARAM,
   type ClientMessage,
   type ServerMessage,
-} from '@acrosticle/protocol';
+} from '@gridicles/protocol';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'closed';
 

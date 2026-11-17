@@ -1,5 +1,6 @@
-import { PuzzleFile, type SampleId } from '@acrosticle/protocol';
+import { PuzzleFile, type SampleId } from '@gridicles/protocol';
 import diploCrostic37 from '../../../samples/puzzles/diplo-crostic-37.json';
+import gridiclesMini1 from '../../../samples/puzzles/gridicles-mini-1.json';
 
 /**
  * The server's own copies of the built-in samples. Anonymous visitors may
@@ -7,4 +8,5 @@ import diploCrostic37 from '../../../samples/puzzles/diplo-crostic-37.json';
  */
 export const SAMPLE_PUZZLES: Readonly<Record<SampleId, PuzzleFile>> = {
   'diplo-crostic-37': PuzzleFile.parse(diploCrostic37),
+  'gridicles-mini-1': PuzzleFile.parse(gridiclesMini1),
 };

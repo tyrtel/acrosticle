@@ -1,4 +1,4 @@
-import { MeResponse, MyRoomsResponse } from '@acrosticle/protocol';
+import { MeResponse, MyRoomsResponse } from '@gridicles/protocol';
 import { request, send, type ApiResult } from '../../lib/api';
 
 export function fetchMe(): Promise<ApiResult<MeResponse>> {

@@ -1,4 +1,4 @@
-import type { ClientMessage, ServerMessage } from '@acrosticle/protocol';
+import type { ClientMessage, ServerMessage } from '@gridicles/protocol';
 import type { SocketLike } from '../../src/features/room/RoomConnection';
 
 /** An in-memory WebSocket for tests. The test drives the "server" side. */

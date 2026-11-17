@@ -1,4 +1,4 @@
-import type { MeResponse } from '@acrosticle/protocol';
+import type { MeResponse } from '@gridicles/protocol';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { fetchMe, signOut as postSignOut } from './accountApi';
 import { SessionContext, SIGNED_OUT } from './sessionContext';

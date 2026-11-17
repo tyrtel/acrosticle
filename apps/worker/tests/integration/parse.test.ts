@@ -1,4 +1,4 @@
-import type { ParsePuzzleResponse } from '@acrosticle/protocol';
+import type { ParsePuzzleResponse } from '@gridicles/protocol';
 import { env, exports } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parsePuzzle, PARSES_PER_HOUR, parseSettings } from '../../src/parsing';

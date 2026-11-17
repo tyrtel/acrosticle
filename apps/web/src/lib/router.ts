@@ -1,4 +1,4 @@
-import { ROOM_ID_PATTERN } from '@acrosticle/protocol';
+import { ROOM_ID_PATTERN } from '@gridicles/protocol';
 import { useSyncExternalStore } from 'react';
 
 /**

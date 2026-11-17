@@ -23,11 +23,16 @@ export function readCookie(request: Request, name: string): string | null {
 export function serializeCookie(
   name: string,
   value: string,
-  { maxAgeSeconds, path = '/' }: { maxAgeSeconds: number; path?: string },
+  {
+    maxAgeSeconds,
+    path = '/',
+    domain,
+  }: { maxAgeSeconds: number; path?: string; domain?: string | undefined },
 ): string {
-  return `${name}=${encodeURIComponent(value)}; Max-Age=${maxAgeSeconds}; Path=${path}; HttpOnly; Secure; SameSite=Lax`;
+  const scope = domain ? `; Domain=${domain}` : '';
+  return `${name}=${encodeURIComponent(value)}; Max-Age=${maxAgeSeconds}; Path=${path}${scope}; HttpOnly; Secure; SameSite=Lax`;
 }
 
-export function clearCookie(name: string, path = '/'): string {
-  return serializeCookie(name, '', { maxAgeSeconds: 0, path });
+export function clearCookie(name: string, path = '/', domain?: string): string {
+  return serializeCookie(name, '', { maxAgeSeconds: 0, path, domain });
 }

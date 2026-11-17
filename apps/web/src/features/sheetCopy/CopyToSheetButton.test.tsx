@@ -1,4 +1,5 @@
-import { parseCompactGrid, type Puzzle, type SolveState } from '@acrosticle/core';
+import { type SolveState } from '@gridicles/core';
+import { parseCompactGrid, type Puzzle } from '@gridicles/acrostic';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { copyRich } from '../../lib/clipboard';
@@ -34,7 +35,13 @@ async function click() {
 describe('CopyToSheetButton', () => {
   it('copies the puzzle as HTML and text, then says so for a moment', async () => {
     vi.mocked(copyRich).mockResolvedValue(undefined);
-    render(<CopyToSheetButton puzzle={tinyPuzzle()} solve={solve} marks={new Set([2])} />);
+    render(
+      <CopyToSheetButton
+        puzzle={{ kind: 'acrostic', puzzle: tinyPuzzle() }}
+        solve={solve}
+        marks={new Set([2])}
+      />,
+    );
     expect(screen.getByRole('button', { name: 'Copy to Sheet' })).toBeInTheDocument();
 
     await click();
@@ -52,7 +59,13 @@ describe('CopyToSheetButton', () => {
 
   it('says when the browser refuses', async () => {
     vi.mocked(copyRich).mockRejectedValue(new Error('denied'));
-    render(<CopyToSheetButton puzzle={tinyPuzzle()} solve={solve} marks={new Set()} />);
+    render(
+      <CopyToSheetButton
+        puzzle={{ kind: 'acrostic', puzzle: tinyPuzzle() }}
+        solve={solve}
+        marks={new Set()}
+      />,
+    );
     await click();
     expect(screen.getByRole('button', { name: "Couldn't copy" })).toBeInTheDocument();
   });

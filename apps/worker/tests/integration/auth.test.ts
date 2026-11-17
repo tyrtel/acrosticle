@@ -75,7 +75,7 @@ describe('GET /api/auth/google/callback', () => {
 
     expect(res.status).toBe(302);
     expect(res.headers.get('Location')).toBe('https://acrosticle.test/my');
-    const session = setCookie(res, 'acrosticle_session');
+    const session = setCookie(res, 'gridicles_session');
     expect(session.header).toMatch(/Max-Age=2592000; Path=\/; HttpOnly; Secure; SameSite=Lax/);
     expect(setCookie(res, 'acrosticle_oauth').header).toContain('Max-Age=0');
 
@@ -88,7 +88,7 @@ describe('GET /api/auth/google/callback', () => {
       params.get('code_challenge'),
     );
 
-    const me = await getMe(`acrosticle_session=${session.value ?? ''}`);
+    const me = await getMe(`gridicles_session=${session.value ?? ''}`);
     expect(await me.json()).toMatchObject({
       user: {
         name: 'Ada Lovelace',
@@ -96,6 +96,7 @@ describe('GET /api/auth/google/callback', () => {
         picture: 'https://example.com/ada.png',
       },
       canCreate: true,
+      canStartSample: true,
       signInConfigured: true,
     });
   });
@@ -116,7 +117,7 @@ describe('GET /api/auth/google/callback', () => {
     const res = await callback({ code: 'auth-code', state: 'forged' }, oauthCookie);
     expect(res.headers.get('Location')).toBe('https://acrosticle.test/my?signin=failed');
     expect(bodies).toHaveLength(0);
-    expect(setCookie(res, 'acrosticle_session').header).toBeUndefined();
+    expect(setCookie(res, 'gridicles_session').header).toBeUndefined();
   });
 
   it('fails when the state cookie is missing or expired', async () => {
@@ -152,7 +153,7 @@ describe('GET /api/auth/google/callback', () => {
   it('refuses accounts whose email Google has not verified', async () => {
     const { res, cookie } = await signInThroughGoogle(validClaims({ email_verified: false }));
     expect(res.headers.get('Location')).toBe('https://acrosticle.test/?signin=unverified');
-    expect(cookie).toBe('acrosticle_session=');
+    expect(cookie).toBe('gridicles_session=');
   });
 
   it('only returns to same-site paths', async () => {
@@ -166,6 +167,7 @@ describe('GET /api/me', () => {
     expect(await (await getMe()).json()).toEqual({
       user: null,
       canCreate: false,
+      canStartSample: false,
       signInConfigured: true,
     });
   });
@@ -175,6 +177,7 @@ describe('GET /api/me', () => {
     expect(await (await getMe(cy.cookie)).json()).toMatchObject({
       user: { name: 'Cy' },
       canCreate: false,
+      canStartSample: false,
     });
   });
 
@@ -192,18 +195,18 @@ describe('GET /api/me', () => {
     await setExpiry(token, Date.now() - 1);
     const res = await getMe(cookie);
     expect(await res.json()).toMatchObject({ user: null });
-    expect(setCookie(res, 'acrosticle_session').header).toContain('Max-Age=0');
+    expect(setCookie(res, 'gridicles_session').header).toContain('Max-Age=0');
     expect(await expiryOf(token)).toBeNull();
   });
 
   it('extends a session that is past its halfway point, and leaves fresh ones alone', async () => {
     const { cookie, token } = await signInAs();
     const fresh = await getMe(cookie);
-    expect(setCookie(fresh, 'acrosticle_session').header).toBeUndefined();
+    expect(setCookie(fresh, 'gridicles_session').header).toBeUndefined();
 
     await setExpiry(token, Date.now() + 5 * 86_400_000);
     const res = await getMe(cookie);
-    expect(setCookie(res, 'acrosticle_session').header).toContain('Max-Age=2592000');
+    expect(setCookie(res, 'gridicles_session').header).toContain('Max-Age=2592000');
     expect(await expiryOf(token)).toBeGreaterThan(Date.now() + 29 * 86_400_000);
   });
 });
@@ -216,7 +219,7 @@ describe('POST /api/auth/logout', () => {
       headers: { Cookie: cookie },
     });
     expect(res.status).toBe(204);
-    expect(setCookie(res, 'acrosticle_session').header).toContain('Max-Age=0');
+    expect(setCookie(res, 'gridicles_session').header).toContain('Max-Age=0');
     expect(await (await getMe(cookie)).json()).toMatchObject({ user: null });
   });
 
@@ -245,7 +248,6 @@ describe('GET /api/me/rooms', () => {
       await postRoom({ sample: 'diplo-crostic-37' }, ada.cookie)
     ).json<{ roomId: string }>();
     await postRoom({ puzzle: tinyPuzzleFile }, bo.cookie);
-    await postRoom({ sample: 'diplo-crostic-37' });
 
     const { rooms } = await (
       await getRooms(ada.cookie)

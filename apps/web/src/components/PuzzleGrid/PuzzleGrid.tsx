@@ -1,7 +1,7 @@
-import type { Grid, GridSquare } from '@acrosticle/core';
 import { memo, type CSSProperties, type MouseEvent } from 'react';
 import { EntryText } from '../EntryText';
 import { PeerTag, type Peer } from '../PeerTag';
+import type { GridLayout, GridShape } from './layout';
 import styles from './PuzzleGrid.module.css';
 
 /** How one square should look. Highlight tones are mutually exclusive; `selected` wins while shown. */
@@ -13,6 +13,12 @@ export interface SquareView {
   readonly tone?: 'word' | 'error' | 'warning' | 'info' | undefined;
   /** Someone highlighted this square: drawn green, over the tone. */
   readonly marked?: boolean | undefined;
+  /** Printed with a circle (crosswords). */
+  readonly circled?: boolean | undefined;
+  /** Printed shaded (crosswords). */
+  readonly shaded?: boolean | undefined;
+  /** A small mark in the corner, e.g. the crossword typing direction (→ or ↓) on the selected square. */
+  readonly badge?: string | undefined;
   /** Other solvers whose cursor is here: outlined in the first one's color, tagged on hover. */
   readonly peers?: readonly Peer[] | undefined;
   /** Native tooltip text. */
@@ -20,10 +26,10 @@ export interface SquareView {
 }
 
 export interface PuzzleGridProps {
-  readonly grid: Grid;
+  readonly grid: GridLayout;
   readonly label: string;
   /** Called for every square on each render; keep it cheap. */
-  readonly viewSquare: (square: GridSquare, gridIndex: number) => SquareView;
+  readonly viewSquare: (gridIndex: number) => SquareView;
   /** The click event is passed for its modifier keys. */
   readonly onSquareClick?: ((gridIndex: number, event: MouseEvent) => void) | undefined;
   /** Draw a focus ring (typing goes to this grid). */
@@ -36,9 +42,9 @@ export interface PuzzleGridProps {
 }
 
 /**
- * The printed-style acrostic grid: numbered squares with clue labels, black
- * squares and punctuation. Purely presentational; callers decide what each
- * square shows and what clicking does.
+ * A printed-style puzzle grid: labelled answer squares, black squares and
+ * punctuation, for acrostics and crosswords alike. Purely presentational;
+ * callers decide what each square shows and what clicking does.
  */
 export function PuzzleGrid({
   grid,
@@ -48,7 +54,7 @@ export function PuzzleGrid({
   showFocus = false,
   showSelection = true,
 }: PuzzleGridProps) {
-  const rows: { square: GridSquare; gridIndex: number }[][] = [];
+  const rows: { square: GridShape; gridIndex: number }[][] = [];
   grid.squares.forEach((square, gridIndex) => {
     if (gridIndex % grid.columns === 0) rows.push([]);
     rows[rows.length - 1]?.push({ square, gridIndex });
@@ -66,7 +72,7 @@ export function PuzzleGrid({
       {rows.map((row, r) => (
         <div role="row" className={styles.row} key={r}>
           {row.map(({ square, gridIndex }) => {
-            const view = viewSquare(square, gridIndex);
+            const view = viewSquare(gridIndex);
             return (
               <Square
                 key={gridIndex}
@@ -78,6 +84,9 @@ export function PuzzleGrid({
                 selected={view.selected ?? false}
                 tone={view.tone}
                 marked={view.marked ?? false}
+                circled={view.circled ?? false}
+                shaded={view.shaded ?? false}
+                badge={view.badge}
                 peers={view.peers}
                 title={view.title}
                 calloutPlacement={r === 0 ? 'below' : 'above'}
@@ -92,7 +101,7 @@ export function PuzzleGrid({
 }
 
 interface SquareProps {
-  readonly square: GridSquare;
+  readonly square: GridShape;
   readonly gridIndex: number;
   readonly ariaLabel: string;
   readonly id: string | undefined;
@@ -100,6 +109,9 @@ interface SquareProps {
   readonly selected: boolean;
   readonly tone: SquareView['tone'];
   readonly marked: boolean;
+  readonly circled: boolean;
+  readonly shaded: boolean;
+  readonly badge: string | undefined;
   readonly peers: readonly Peer[] | undefined;
   readonly title: string | undefined;
   /** The top row's callouts go below, where the grid's scroll area won't clip them. */
@@ -108,7 +120,7 @@ interface SquareProps {
 }
 
 // Kind modifiers are mapped explicitly so they can't collide with inner element classes.
-const KIND_CLASS: Record<GridSquare['kind'], string | undefined> = {
+const KIND_CLASS: Record<GridShape['kind'], string | undefined> = {
   letter: styles.letterSquare,
   block: styles.block,
   punctuation: styles.punctuation,
@@ -123,6 +135,9 @@ const Square = memo(function Square({
   selected,
   tone,
   marked,
+  circled,
+  shaded,
+  badge,
   peers,
   title,
   calloutPlacement,
@@ -132,6 +147,7 @@ const Square = memo(function Square({
   const classes = [
     styles.square,
     KIND_CLASS[square.kind],
+    shaded && styles.shaded,
     tone && styles[tone],
     marked && styles.marked,
     selected && styles.selected,
@@ -151,9 +167,9 @@ const Square = memo(function Square({
     >
       {square.kind === 'letter' && (
         <>
+          {circled && <span className={styles.circle} aria-hidden="true" />}
           <span className={styles.label} aria-hidden="true">
-            {square.number}
-            {square.clue}
+            {square.label}
           </span>
           <span className={styles.entry} aria-hidden="true">
             <EntryText
@@ -166,6 +182,11 @@ const Square = memo(function Square({
         </>
       )}
       {square.kind === 'punctuation' && <span aria-hidden="true">{square.char}</span>}
+      {badge && (
+        <span className={styles.badge} aria-hidden="true">
+          {badge}
+        </span>
+      )}
       {peers && peers.length > 0 && <PeerTag peers={peers} className={styles.peerTag} />}
     </div>
   );

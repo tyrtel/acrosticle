@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/App';
 import { FakeBackend } from '../support/fakeBackend';
 
@@ -18,11 +18,19 @@ beforeEach(() => {
 });
 
 describe('solving the sample puzzle', () => {
+  it("can't be started by a guest", async () => {
+    render(<App />);
+    expect(await screen.findByRole('button', { name: 'Try the sample puzzle' })).toBeDisabled();
+    expect(screen.getByText(/Sign in with an invited account/)).toBeInTheDocument();
+  });
+
   it('creates a room for the sample, joins it, and solves across both views', async () => {
+    backend.signIn();
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: 'Try the sample puzzle' }));
+    await user.click(await screen.findByRole('button', { name: 'Try the sample puzzle' }));
+    await vi.waitFor(() => expect(window.location.pathname).toMatch(/^\/r\//));
     expect(window.location.pathname).toMatch(/^\/r\/Created0+1$/);
 
     await user.type(await screen.findByLabelText(/Your name/), 'Ada');

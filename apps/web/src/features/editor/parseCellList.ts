@@ -1,4 +1,4 @@
-import type { CellNumber } from '@acrosticle/core';
+import type { CellNumber } from '@gridicles/core';
 
 export type CellListResult = { ok: true; cells: CellNumber[] } | { ok: false; error: string };
 

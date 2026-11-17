@@ -1,2 +1,2 @@
-export { createRoom, createSampleRoom } from './roomApi';
+export { createCrosswordRoom, createRoom, createSampleRoom } from './roomApi';
 export { RoomPage, type RoomPageProps } from './RoomPage';

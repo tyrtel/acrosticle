@@ -1,11 +1,11 @@
-import type { Entry } from '@acrosticle/core';
+import type { Entry } from '@gridicles/core';
 import type {
   ClientMessage,
   Member,
   MeResponse,
   MyRoomsResponse,
   PuzzleFile,
-} from '@acrosticle/protocol';
+} from '@gridicles/protocol';
 import { vi } from 'vitest';
 import sample from '../../../../samples/puzzles/diplo-crostic-37.json';
 import { FakeSocket } from './fakeSocket';
@@ -20,7 +20,12 @@ export class FakeBackend {
   readonly rooms = new Map<string, FakeRoom>();
   /** The signed-in user's puzzles (created or joined); listed most recently active first. */
   readonly myRooms: MyRoomsResponse['rooms'][number][] = [];
-  me: MeResponse = { user: null, canCreate: false, signInConfigured: true };
+  me: MeResponse = {
+    user: null,
+    canCreate: false,
+    canStartSample: false,
+    signInConfigured: true,
+  };
   /** Delay /api/me answers, to test the session arriving after other data. */
   meDelayMs = 0;
   /** What /api/puzzles/parse answers (status 200 = the body is a ParsePuzzleResponse). */
@@ -42,7 +47,12 @@ export class FakeBackend {
     email = 'ada@example.com',
     picture = null as string | null,
   } = {}): void {
-    this.me = { user: { id: 'u1', name, email, picture }, canCreate, signInConfigured: true };
+    this.me = {
+      user: { id: 'u1', name, email, picture },
+      canCreate,
+      canStartSample: canCreate,
+      signInConfigured: true,
+    };
   }
 
   /** Pre-creates a room, as if someone shared its link. */
@@ -105,7 +115,12 @@ export class FakeBackend {
       });
     }
     if (url === '/api/auth/logout' && init?.method === 'POST') {
-      this.me = { user: null, canCreate: false, signInConfigured: this.me.signInConfigured };
+      this.me = {
+        user: null,
+        canCreate: false,
+        canStartSample: false,
+        signInConfigured: this.me.signInConfigured,
+      };
       return Promise.resolve(new Response(null, { status: 204 }));
     }
     if (url === '/api/rooms' && init?.method === 'POST') {
@@ -115,9 +130,10 @@ export class FakeBackend {
         return json(status, { error });
       }
       const body = JSON.parse(init.body as string) as { puzzle?: PuzzleFile; sample?: string };
-      // Same rules as the real Worker: samples are free, own puzzles need an allowlisted account.
+      // Same rules as the real Worker: every room needs an allowlisted account.
       let puzzle: PuzzleFile;
       if (body.sample) {
+        if (!this.me.canStartSample) return json(401, { error: 'Sign in to start a puzzle.' });
         puzzle = sample;
       } else {
         if (!this.me.user)
@@ -131,6 +147,8 @@ export class FakeBackend {
         const createdAt = Date.UTC(2026, 10, this.created);
         this.myRooms.push({
           roomId,
+          kind: puzzle.kind ?? 'acrostic',
+          url: `${window.location.origin}/r/${roomId}`,
           title: puzzle.title ?? null,
           createdAt,
           updatedAt: createdAt,

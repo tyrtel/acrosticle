@@ -1,5 +1,5 @@
-import type { Puzzle } from '@acrosticle/core';
-import { parsePuzzleFile } from '@acrosticle/protocol';
+import type { Puzzle } from '@gridicles/acrostic';
+import { parseAcrosticFile } from '@gridicles/protocol';
 import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { downscaleImage } from '../../lib/downscale';
 import styles from './Editor.module.css';
@@ -65,7 +65,7 @@ export function UploadImage({ onParsed, prepare = downscaleImage }: UploadImageP
       setStage({ kind: 'failed', error: result.error });
       return;
     }
-    const puzzle = parsePuzzleFile(result.value.file);
+    const puzzle = parseAcrosticFile(result.value.file);
     if (!puzzle.ok) {
       setStage({ kind: 'failed', error: 'The server sent an unexpected response.' });
       return;

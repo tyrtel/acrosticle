@@ -1,4 +1,4 @@
-import type { MeResponse } from '@acrosticle/protocol';
+import type { MeResponse } from '@gridicles/protocol';
 import { createContext, use } from 'react';
 
 export interface Session {
@@ -8,7 +8,12 @@ export interface Session {
   readonly signOut: () => Promise<void>;
 }
 
-export const SIGNED_OUT: MeResponse = { user: null, canCreate: false, signInConfigured: false };
+export const SIGNED_OUT: MeResponse = {
+  user: null,
+  canCreate: false,
+  canStartSample: false,
+  signInConfigured: false,
+};
 
 export const SessionContext = createContext<Session>({
   loaded: false,

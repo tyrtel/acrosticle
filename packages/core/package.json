@@ -1,8 +1,8 @@
 {
-  "name": "@acrosticle/core",
+  "name": "@gridicles/core",
   "version": "0.0.0",
   "private": true,
-  "description": "Pure acrostic domain logic. No React, no Cloudflare, no I/O.",
+  "description": "Puzzle-agnostic solving logic shared by every puzzle type: entries, solve state, undo history, highlights. No React, no Cloudflare, no I/O.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

@@ -48,6 +48,10 @@
   font-weight: 600;
 }
 
+.shaded {
+  background: var(--shade);
+}
+
 .word {
   background: var(--word);
 }
@@ -73,9 +77,11 @@
   background: var(--select);
 }
 
-/* Selected and highlighted: keep a green ring so the highlight still shows. */
+/* Selected and highlighted: stays green, with a yellow halo around its edges. */
 .grid:not(.idle) .selected.marked {
-  box-shadow: inset 0 0 0 3px var(--mark-ring);
+  z-index: 1;
+  background: var(--mark);
+  box-shadow: var(--select-halo);
 }
 
 .peer {
@@ -97,6 +103,25 @@
 .block.selected {
   outline: 3px solid var(--select);
   outline-offset: -3px;
+}
+
+/* A printed circle (crosswords): behind the letter, inside the square. */
+.circle {
+  position: absolute;
+  inset: 2px;
+  border: 1px solid var(--text-muted);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.badge {
+  position: absolute;
+  bottom: 0;
+  left: 2px;
+  font-size: calc(var(--cell) * 0.3);
+  line-height: 1;
+  color: var(--focus-ring);
+  font-weight: 700;
 }
 
 .label {

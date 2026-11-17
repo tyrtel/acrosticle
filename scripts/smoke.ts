@@ -1,13 +1,20 @@
 /**
- * Checks that a deployed Acrosticle works end to end.
+ * Checks that a deployed site works end to end.
  *
  *   npm run smoke                      # https://acrosticle.tyrtel.workers.dev
  *   npm run smoke -- http://localhost:8787
+ *   npm run smoke -- https://crosswordicle.tyrtel.workers.dev --crossword
  *
- * Note: it creates one sample room each run (tiny, and anonymous).
  */
-const BASE = (process.argv[2] ?? 'https://acrosticle.tyrtel.workers.dev').replace(/\/$/, '');
-const CALLBACK = `${BASE}/api/auth/google/callback`;
+const args = process.argv.slice(2);
+const CROSSWORD = args.includes('--crossword');
+const BASE = (
+  args.find((arg) => !arg.startsWith('--')) ?? 'https://acrosticle.tyrtel.workers.dev'
+).replace(/\/$/, '');
+/** Crosswordicle signs in through Acrosticle, whose callback serves both sites. */
+const SIGN_IN_ORIGIN = CROSSWORD ? 'https://acrosticle.tyrtel.workers.dev' : BASE;
+const CALLBACK = `${SIGN_IN_ORIGIN}/api/auth/google/callback`;
+const SAMPLE = CROSSWORD ? 'gridicles-mini-1' : 'diplo-crostic-37';
 let failures = 0;
 
 async function check(name: string, test: () => Promise<string | void>): Promise<void> {
@@ -58,7 +65,16 @@ async function main(): Promise<void> {
   });
 
   await check('"Sign in with Google" sends the production callback', async () => {
-    const res = await get('/api/auth/google', { redirect: 'manual' });
+    let res = await get('/api/auth/google', { redirect: 'manual' });
+    if (CROSSWORD) {
+      // First a hand-off to Acrosticle, saying to come back here.
+      const handOff = new URL(res.headers.get('location') ?? '', BASE);
+      assert(
+        handOff.origin === SIGN_IN_ORIGIN && handOff.searchParams.get('returnOrigin') === BASE,
+        `handed off to ${handOff.toString()}`,
+      );
+      res = await fetch(handOff, { redirect: 'manual' });
+    }
     const location = res.headers.get('location') ?? '';
     assert(
       location.startsWith('https://accounts.google.com/'),
@@ -68,32 +84,13 @@ async function main(): Promise<void> {
     assert(redirectUri === CALLBACK, `redirect_uri is ${redirectUri ?? 'missing'}`);
   });
 
-  let roomId = '';
-  await check('anyone can start a sample room', async () => {
+  await check('starting a sample room requires an invited account', async () => {
     const res = await get('/api/rooms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Origin: BASE },
-      body: JSON.stringify({ sample: 'diplo-crostic-37' }),
+      body: JSON.stringify({ sample: SAMPLE }),
     });
-    const body = await res.text();
-    assert(res.status === 201, `answered ${res.status}: ${body}`);
-    ({ roomId } = JSON.parse(body) as { roomId: string });
-    return roomId;
-  });
-
-  await check('room lookups are fast (no stalls)', async () => {
-    assert(roomId, 'no room was created');
-    const times: number[] = [];
-    for (let i = 0; i < 10; i++) {
-      const started = performance.now();
-      const res = await get(`/api/rooms/${roomId}`);
-      times.push(performance.now() - started);
-      assert(res.ok, `lookup answered ${res.status}`);
-    }
-    const slowest = Math.max(...times);
-    assert(slowest < 3_000, `slowest of 10 lookups took ${Math.round(slowest)} ms`);
-    const median = [...times].sort((a, b) => a - b)[5] ?? 0;
-    return `median ${Math.round(median)} ms, slowest ${Math.round(slowest)} ms`;
+    assert(res.status === 401, `answered ${res.status}`);
   });
 
   await check('importing a puzzle requires sign-in', async () => {
@@ -105,27 +102,34 @@ async function main(): Promise<void> {
     assert(res.status === 401, `answered ${res.status}`);
   });
 
-  await check('joining the room over WebSocket gets the puzzle', async () => {
-    assert(roomId, 'no room was created');
-    const url = `${BASE.replace(/^http/, 'ws')}/api/rooms/${roomId}/ws`;
-    const snapshot = await new Promise<{ puzzle?: { title?: string } }>((resolve, reject) => {
+  // Rooms need an account now, so these use a room that doesn't exist: they still go all the
+  // way to a Durable Object, which is what can stall.
+  const missing = 'SmokeTestNoSuchRoom000';
+  await check('room lookups are fast (no stalls)', async () => {
+    const times: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      const started = performance.now();
+      const res = await get(`/api/rooms/${missing}`);
+      times.push(performance.now() - started);
+      assert(res.status === 404, `lookup answered ${res.status}`);
+    }
+    const slowest = Math.max(...times);
+    assert(slowest < 3_000, `slowest of 10 lookups took ${Math.round(slowest)} ms`);
+    const median = [...times].sort((a, b) => a - b)[5] ?? 0;
+    return `median ${Math.round(median)} ms, slowest ${Math.round(slowest)} ms`;
+  });
+
+  await check('joining a room that does not exist is refused', async () => {
+    const url = `${BASE.replace(/^http/, 'ws')}/api/rooms/${missing}/ws`;
+    await new Promise<void>((resolve, reject) => {
       const ws = new WebSocket(url);
-      const timer = setTimeout(() => reject(new Error('no snapshot within 10s')), 10_000);
-      ws.onopen = () => ws.send(JSON.stringify({ type: 'join', name: 'Smoke test' }));
-      ws.onmessage = (event) => {
-        const message = JSON.parse(String(event.data)) as {
-          type: string;
-          puzzle?: { title?: string };
-        };
-        if (message.type === 'snapshot') {
-          clearTimeout(timer);
-          ws.close();
-          resolve(message);
-        }
+      const timer = setTimeout(() => reject(new Error('no answer within 10s')), 10_000);
+      ws.onopen = () => reject(new Error('the socket opened'));
+      ws.onerror = () => {
+        clearTimeout(timer);
+        resolve();
       };
-      ws.onerror = () => reject(new Error('WebSocket error'));
     });
-    return snapshot.puzzle?.title;
   });
 
   console.log('');

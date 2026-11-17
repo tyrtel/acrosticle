@@ -14,6 +14,8 @@ export interface SheetClipboard {
 // Light colors to match a spreadsheet; the app's highlight green, as in its light theme.
 const MARK = '#bfe8c4';
 const GRID_BORDER = '1px solid #9a9a9a';
+const CIRCLED_BORDER = 'border:2px solid #333';
+const SHADE = '#e2e2e2';
 
 const STYLES: Record<SheetCellKind, string> = {
   empty: '',
@@ -24,6 +26,7 @@ const STYLES: Record<SheetCellKind, string> = {
   clue: 'vertical-align:middle;white-space:normal;padding:0 4px',
   answer: 'border-bottom:1px solid #000;font-size:12pt;font-weight:bold;text-align:center',
   number: 'font-size:7pt;color:#666;text-align:center;vertical-align:top',
+  heading: 'font-weight:bold;font-size:11pt;vertical-align:bottom',
 };
 
 /**
@@ -61,7 +64,11 @@ function htmlCell(cell: SheetCell, row: number, column: number): string {
     const formula = `=R[${cell.copies.row - row}]C[${cell.copies.column - column}]`;
     attributes.push(`data-sheets-formula="${formula}"`);
   }
-  const style = [STYLES[cell.kind], cell.marked ? `background:${MARK}` : '']
+  const style = [
+    STYLES[cell.kind],
+    cell.circled ? CIRCLED_BORDER : '',
+    cell.marked ? `background:${MARK}` : cell.shaded ? `background:${SHADE}` : '',
+  ]
     .filter(Boolean)
     .join(';');
   if (style) attributes.push(`style="${style}"`);

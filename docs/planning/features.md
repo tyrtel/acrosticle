@@ -15,6 +15,7 @@ Milestones M1–M4 are done and deployed; M5 (image parsing) and M6 (polish) are
 | F7  | Undo and Redo (buttons, Ctrl/⌘+Z, Ctrl/⌘+Shift+Z, Ctrl+Y)   | Medium | ✅ Done (2026-11-10) |
 | F8  | Highlight squares green, shared with the room               | Medium | ✅ Done (2026-11-17) |
 | F9  | Copy the whole puzzle to the clipboard for Google Sheets    | Medium | Built (2026-11-17)   |
+| F10 | Crosswords: Crosswordicle, a second site sharing accounts   | Large  | Built (2026-11-17)   |
 
 ## F1. Start a new puzzle from anywhere
 

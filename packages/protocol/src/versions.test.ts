@@ -1,4 +1,4 @@
-import { isEntry, type Entry } from '@acrosticle/core';
+import { isEntry, type Entry } from '@gridicles/core';
 import { describe, expect, it } from 'vitest';
 import type { ServerMessage } from './messages';
 import {

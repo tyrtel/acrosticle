@@ -1,4 +1,4 @@
-import { MAX_ENTRY_LENGTH, type Entry } from '@acrosticle/core';
+import { MAX_ENTRY_LENGTH, type Entry } from '@gridicles/core';
 import { describe, expect, it } from 'vitest';
 import {
   encodeMessage,

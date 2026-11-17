@@ -19,7 +19,15 @@ beforeEach(() => {
 
 function addMine(roomId: string, title: string, updatedAt: number, createdByMe = true) {
   backend.addRoom({ ...tiny, title }, roomId);
-  backend.myRooms.push({ roomId, title, createdAt: updatedAt, updatedAt, createdByMe });
+  backend.myRooms.push({
+    roomId,
+    kind: 'acrostic',
+    url: `http://localhost:3000/r/${roomId}`,
+    title,
+    createdAt: updatedAt,
+    updatedAt,
+    createdByMe,
+  });
 }
 
 function setup(props: Partial<Parameters<typeof MyPuzzlesPanel>[0]> = {}) {
@@ -66,6 +74,8 @@ describe('MyPuzzlesPanel', () => {
       backend.addRoom(tiny, roomId);
       backend.myRooms.push({
         roomId,
+        kind: 'acrostic',
+        url: `http://localhost:3000/r/${roomId}`,
         title: 'Tiny',
         createdAt,
         updatedAt: createdAt,

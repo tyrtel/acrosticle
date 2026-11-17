@@ -1,0 +1,57 @@
+.editor {
+  max-width: 60rem;
+}
+
+.meta,
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.tools input[type='number'] {
+  width: 4rem;
+}
+
+.note {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.grid {
+  overflow-x: auto;
+  padding: 3px;
+  --grid-space: min(100vw, 60rem);
+}
+
+.cluesLabel {
+  display: block;
+  margin-top: 1.25rem;
+  font-weight: 700;
+}
+
+.clues {
+  display: block;
+  width: 100%;
+  font-family: ui-monospace, monospace;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.issues {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--warning);
+  border-radius: 6px;
+}
+
+.issues h3 {
+  margin: 0.25rem 0 0;
+}
+
+.start {
+  font-weight: 700;
+}

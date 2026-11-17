@@ -14,16 +14,24 @@ logger.error = (message, options) => {
   logError(message, options);
 };
 
+/**
+ * One app, two sites: VITE_SITE=crossword builds Crosswordicle (into dist-crossword, on port
+ * 5175 in dev); anything else builds Acrosticle (into dist, on port 5173). See src/lib/site.ts.
+ */
+const crossword = process.env.VITE_SITE === 'crossword';
+process.env.VITE_SITE_NAME = crossword ? 'Crosswordicle' : 'Acrosticle';
+
 export default defineConfig({
   customLogger: logger,
+  build: { outDir: crossword ? 'dist-crossword' : 'dist' },
   plugins: [react()],
   server: {
-    port: 5173,
+    port: crossword ? 5175 : 5173,
     strictPort: true,
     // In dev, forward API + WebSocket traffic to `wrangler dev`.
     proxy: {
       '/api': {
-        target: `http://localhost:${process.env.ACROSTICLE_WORKER_PORT ?? '8787'}`,
+        target: `http://localhost:${process.env.ACROSTICLE_WORKER_PORT ?? (crossword ? '8789' : '8787')}`,
         ws: true,
       },
     },

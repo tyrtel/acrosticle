@@ -1,5 +1,5 @@
-import type { Puzzle } from '@acrosticle/core';
-import { roomPath } from '@acrosticle/protocol';
+import type { Puzzle } from '@gridicles/acrostic';
+import { roomPath } from '@gridicles/protocol';
 import { useEffect, useState } from 'react';
 import { Link } from './components/Link';
 import {
@@ -11,8 +11,11 @@ import {
   useSession,
 } from './features/account';
 import { ImportPuzzle, ReviewPuzzle, UploadImage } from './features/editor';
-import { createRoom, createSampleRoom, RoomPage } from './features/room';
+import { blankCrossword, type Crossword } from '@gridicles/crossword';
+import { CrosswordEditor, ImportCrossword } from './features/crossword';
+import { createCrosswordRoom, createRoom, createSampleRoom, RoomPage } from './features/room';
 import type { ApiResult } from './lib/api';
+import { SITE } from './lib/site';
 import { ThemeToggle } from './components/ThemeToggle';
 import { navigate, setSearchParam, useRoute, useSearchParam } from './lib/router';
 
@@ -49,7 +52,7 @@ function Shell() {
       <header className="app-header">
         <h1>
           <Link href="/" className="home-link">
-            Acrosticle
+            {SITE.name}
           </Link>
         </h1>
         <nav className="app-nav" aria-label="Main">
@@ -82,7 +85,8 @@ type HomeScreen =
   | { readonly kind: 'start' }
   | { readonly kind: 'import' }
   | { readonly kind: 'upload' }
-  | { readonly kind: 'review'; readonly puzzle: Puzzle; readonly notes?: readonly string[] };
+  | { readonly kind: 'review'; readonly puzzle: Puzzle; readonly notes?: readonly string[] }
+  | { readonly kind: 'edit-crossword'; readonly crossword: Crossword };
 
 /** Start page: open the sample, or import and review a puzzle, then create a room for it. */
 function Home() {
@@ -117,23 +121,28 @@ function Home() {
       {creating && <p role="status">Creating your room…</p>}
       {screen.kind === 'start' && (
         <>
-          <p>Solve acrostic puzzles together, in real time.</p>
+          <p>{SITE.tagline}</p>
           <p className="home-actions">
             <button
               type="button"
-              disabled={creating}
-              onClick={() => void startRoom(() => createSampleRoom('diplo-crostic-37'))}
+              disabled={creating || !me.canStartSample}
+              aria-describedby={me.canStartSample ? undefined : 'import-note'}
+              onClick={() => void startRoom(() => createSampleRoom(SITE.sample))}
             >
-              Try the sample puzzle
+              {SITE.kind === 'crossword' ? 'Try the sample crossword' : 'Try the sample puzzle'}
             </button>{' '}
-            <button
-              type="button"
-              disabled={!me.canCreate}
-              aria-describedby={me.canCreate ? undefined : 'import-note'}
-              onClick={() => setScreen({ kind: 'upload' })}
-            >
-              Upload a puzzle image
-            </button>{' '}
+            {SITE.kind === 'acrostic' && (
+              <>
+                <button
+                  type="button"
+                  disabled={!me.canCreate}
+                  aria-describedby={me.canCreate ? undefined : 'import-note'}
+                  onClick={() => setScreen({ kind: 'upload' })}
+                >
+                  Upload a puzzle image
+                </button>{' '}
+              </>
+            )}
             <button
               type="button"
               disabled={!me.canCreate}
@@ -142,11 +151,36 @@ function Home() {
             >
               Import a puzzle file
             </button>
+            {SITE.kind === 'crossword' && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  disabled={!me.canCreate}
+                  aria-describedby={me.canCreate ? undefined : 'import-note'}
+                  onClick={() =>
+                    setScreen({ kind: 'edit-crossword', crossword: blankCrossword(15, 15) })
+                  }
+                >
+                  Build a crossword
+                </button>
+              </>
+            )}
           </p>
           {!me.canCreate && <ImportNote />}
         </>
       )}
-      {screen.kind === 'import' && (
+      {screen.kind === 'import' && SITE.kind === 'crossword' && (
+        <ImportCrossword onLoad={(crossword) => setScreen({ kind: 'edit-crossword', crossword })} />
+      )}
+      {screen.kind === 'edit-crossword' && (
+        <CrosswordEditor
+          initial={screen.crossword}
+          starting={creating}
+          onStart={(crossword) => void startRoom(() => createCrosswordRoom(crossword))}
+        />
+      )}
+      {screen.kind === 'import' && SITE.kind === 'acrostic' && (
         <ImportPuzzle onImport={(puzzle) => setScreen({ kind: 'review', puzzle })} />
       )}
       {screen.kind === 'upload' && (
@@ -172,14 +206,18 @@ function ImportNote() {
   if (me.user) {
     return (
       <p id="import-note" className="note">
-        Your account ({me.user.email}) isn&apos;t enabled for creating puzzles yet. Ask the site
+        Your account ({me.user.email}) isn&apos;t enabled for starting puzzles yet. Ask the site
         owner to add it.
       </p>
     );
   }
   return (
     <div id="import-note" className="note">
-      <p>Sign in to add your own puzzles (from an image or a file). The sample needs no account.</p>
+      <p>
+        {me.canStartSample
+          ? 'Sign in to add your own puzzles (from an image or a file).'
+          : 'Sign in with an invited account to start puzzles, including the sample.'}
+      </p>
       <SignInButton />
     </div>
   );

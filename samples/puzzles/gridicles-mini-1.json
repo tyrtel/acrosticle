@@ -1,0 +1,23 @@
+{
+  "$comment": "An original mini crossword written for Gridicles, free to use as a sample and test fixture.",
+  "kind": "crossword",
+  "title": "Gridicles Mini No. 1",
+  "author": "Gridicles",
+  "grid": ["GAS##", "ABLE#", "SLATE", "#ETNA", "##EAR"],
+  "clues": {
+    "across": [
+      { "number": 1, "text": "Fuel at the pump" },
+      { "number": 4, "text": "Capable" },
+      { "number": 6, "text": "Roofing stone" },
+      { "number": 8, "text": "Sicilian volcano" },
+      { "number": 9, "text": "Corn unit" }
+    ],
+    "down": [
+      { "number": 1, "text": "Laughing ___ (dentist's aid)" },
+      { "number": 2, "text": "___-bodied seaman" },
+      { "number": 3, "text": "Clean ___ (fresh start)" },
+      { "number": 5, "text": "Mount near Catania" },
+      { "number": 7, "text": "It hears" }
+    ]
+  }
+}

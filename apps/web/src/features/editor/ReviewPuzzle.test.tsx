@@ -1,4 +1,4 @@
-import { parsePuzzleFile } from '@acrosticle/protocol';
+import { parseAcrosticFile } from '@gridicles/protocol';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -6,7 +6,7 @@ import { samplePuzzleFileAsPrinted } from '../../../tests/support/samples';
 import { ReviewPuzzle } from './ReviewPuzzle';
 
 function setup() {
-  const parsed = parsePuzzleFile(samplePuzzleFileAsPrinted());
+  const parsed = parseAcrosticFile(samplePuzzleFileAsPrinted());
   if (!parsed.ok) throw new Error(parsed.error);
   const onStart = vi.fn();
   const user = userEvent.setup();

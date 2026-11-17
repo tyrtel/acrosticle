@@ -1,4 +1,4 @@
-import type { CellNumber } from '@acrosticle/core';
+import type { CellNumber } from '@gridicles/core';
 
 /** Another solver, as shown on the squares their cursor is on. */
 export interface Peer {

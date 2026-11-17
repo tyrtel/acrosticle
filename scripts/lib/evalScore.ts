@@ -1,5 +1,5 @@
 /** Scores a parsed puzzle file against a hand-made "as printed" transcription. Pure. */
-import type { PuzzleFile } from '@acrosticle/protocol';
+import type { AcrosticFile } from '@gridicles/protocol';
 
 export interface Score {
   /** Share of grid squares (in reading order) with the right kind and number. */
@@ -14,7 +14,7 @@ export interface Score {
   readonly sameShape: boolean;
 }
 
-export function scoreParse(parsed: PuzzleFile, truth: PuzzleFile): Score {
+export function scoreParse(parsed: AcrosticFile, truth: AcrosticFile): Score {
   const got = tokens(parsed);
   const want = tokens(truth);
   let numberHits = 0;
@@ -58,7 +58,7 @@ export function similarity(a: string, b: string): number {
   return longest === 0 ? 1 : 1 - levenshtein(x, y) / longest;
 }
 
-function tokens(file: PuzzleFile): string[] {
+function tokens(file: AcrosticFile): string[] {
   return file.grid.rows.flatMap((row) => row.trim().split(/\s+/).filter(Boolean));
 }
 

@@ -1,0 +1,137 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.title {
+  margin: 0;
+}
+
+.byline {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.layout {
+  /* The grid gets what the clue lists (two columns of about 16rem) leave over. */
+  --page: min(100vw, 90rem);
+  --grid-space: calc(var(--page) - 34rem - 4rem);
+  display: grid;
+  grid-template-columns: auto minmax(30rem, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.gridPane {
+  min-width: 0;
+  overflow-x: auto;
+  padding: 3px;
+}
+
+/* The current clue, above the grid: the main way to read it on a phone. */
+.clueBar {
+  min-height: 2.6em;
+  margin: 0 0 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  background: var(--word);
+  line-height: 1.3;
+}
+
+.hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.clueLists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
+}
+
+.clueList h3 {
+  margin: 0 0 0.4rem;
+}
+
+.clueList ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.clueList button {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.clueList button:hover {
+  background: var(--clue);
+}
+
+.clueList .currentClue {
+  background: var(--word);
+}
+
+.clueList .crossingClue {
+  background: var(--clue);
+}
+
+.clueNumber {
+  min-width: 1.8em;
+  font-weight: 700;
+  text-align: right;
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    --grid-space: 100vw;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .clueLists {
+    max-height: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .clueLists {
+    grid-template-columns: 1fr;
+  }
+}
+
+.import {
+  max-width: 40rem;
+}
+
+.paste {
+  display: block;
+  width: 100%;
+  margin: 0.3rem 0 0.5rem;
+  font-family: ui-monospace, monospace;
+}
+
+.loaded {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.loaded h3 {
+  margin: 0;
+}

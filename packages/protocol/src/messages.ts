@@ -1,4 +1,4 @@
-import { isEntry, MAX_ENTRY_LENGTH } from '@acrosticle/core';
+import { isEntry, MAX_ENTRY_LENGTH } from '@gridicles/core';
 import { z } from 'zod';
 import { validateWith, type ParseResult } from './parseResult';
 import { PuzzleFile } from './puzzleFile';

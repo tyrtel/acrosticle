@@ -1,12 +1,10 @@
+import { noMarks, type Entry, type SolveState } from '@gridicles/core';
 import {
   buildPuzzleIndex,
-  noMarks,
   parseCompactGrid,
   puzzleFromCompact,
-  type Entry,
   type Puzzle,
-  type SolveState,
-} from '@acrosticle/core';
+} from '@gridicles/acrostic';
 import { describe, expect, it } from 'vitest';
 import sample from '../../../../../samples/puzzles/diplo-crostic-37.json';
 import { sheetLayout, type SheetCell } from './sheetLayout';

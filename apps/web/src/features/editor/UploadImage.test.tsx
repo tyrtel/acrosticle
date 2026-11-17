@@ -1,4 +1,4 @@
-import type { ParsePuzzleResponse } from '@acrosticle/protocol';
+import type { ParsePuzzleResponse } from '@gridicles/protocol';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

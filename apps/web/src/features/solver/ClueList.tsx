@@ -1,5 +1,6 @@
-import type { CellNumber, Clue, ClueLabel, Marks, PuzzleIndex, SolveState } from '@acrosticle/core';
-import { getCell } from '@acrosticle/core';
+import type { CellNumber, Marks, SolveState } from '@gridicles/core';
+import type { Clue, ClueLabel, PuzzleIndex } from '@gridicles/acrostic';
+import { getCell } from '@gridicles/core';
 import { memo, type CSSProperties } from 'react';
 import { EntryText } from '../../components/EntryText';
 import { describePeers, PeerTag, type Peer, type PeerMap } from '../../components/PeerTag';

@@ -1,4 +1,4 @@
-import { ParsePuzzleResponse } from '@acrosticle/protocol';
+import { ParsePuzzleResponse } from '@gridicles/protocol';
 import { request, type ApiResult } from '../../lib/api';
 
 /** Reading an image can take a minute or two; allow plenty of time. */

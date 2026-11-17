@@ -1,4 +1,4 @@
-import { ApiError, validateWith } from '@acrosticle/protocol';
+import { ApiError, validateWith } from '@gridicles/protocol';
 
 /** Give up on a request that hasn't answered in this long. */
 export const REQUEST_TIMEOUT_MS = 15_000;

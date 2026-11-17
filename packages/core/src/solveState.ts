@@ -1,5 +1,5 @@
 import type { Entry } from './entries';
-import type { CellNumber } from './puzzle';
+import type { CellNumber } from './cells';
 
 /** The letters entered so far, keyed by cell number. Missing key = empty cell. */
 export type SolveState = Readonly<Record<CellNumber, Entry>>;
