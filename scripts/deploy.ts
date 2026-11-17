@@ -6,8 +6,8 @@
  *   npm run deploy -- --secrets    # also upload GOOGLE_CLIENT_SECRET and CREATOR_ALLOWLIST
  *                                  # from apps/worker/.dev.vars (needed on the first deploy)
  *
- * Crosswordicle needs only CREATOR_ALLOWLIST; if it's missing there (its first deploy), it's
- * copied from apps/worker/.dev.vars automatically.
+ * Crosswordicle needs CREATOR_ALLOWLIST and ANTHROPIC_API_KEY (no Google secret); any it's
+ * missing are copied from apps/worker/.dev.vars automatically.
  *
  * Secrets go to Wrangler through a temporary file readable only by you, which
  * is deleted afterwards. They are never printed.

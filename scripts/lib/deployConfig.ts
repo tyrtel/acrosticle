@@ -7,8 +7,11 @@ export const DEPLOY_SECRETS = ['GOOGLE_CLIENT_SECRET', 'CREATOR_ALLOWLIST'] as c
 /** Secrets uploaded only when present (image parsing works without the key, answering 503). */
 export const OPTIONAL_DEPLOY_SECRETS = ['ANTHROPIC_API_KEY'] as const;
 
-/** Crosswordicle signs in through Acrosticle, so it only needs the creator allowlist. */
-export const CROSSWORD_SECRETS = ['CREATOR_ALLOWLIST'] as const;
+/**
+ * Crosswordicle signs in through Acrosticle, so it needs no Google secret: just the creator
+ * allowlist, and the Claude key for reading photos and tidying clues.
+ */
+export const CROSSWORD_SECRETS = ['CREATOR_ALLOWLIST', 'ANTHROPIC_API_KEY'] as const;
 
 /** The secrets Crosswordicle still needs, given the names `wrangler secret list` printed. */
 export function missingCrosswordSecrets(listed: readonly string[]): string[] {

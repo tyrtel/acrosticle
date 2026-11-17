@@ -51,8 +51,8 @@ describe('configValue / configProblems', () => {
 
 describe('missingCrosswordSecrets', () => {
   it("lists what Crosswordicle doesn't have yet", () => {
-    expect(missingCrosswordSecrets([])).toEqual(['CREATOR_ALLOWLIST']);
-    expect(missingCrosswordSecrets(['OTHER'])).toEqual(['CREATOR_ALLOWLIST']);
-    expect(missingCrosswordSecrets(['CREATOR_ALLOWLIST'])).toEqual([]);
+    expect(missingCrosswordSecrets([])).toEqual(['CREATOR_ALLOWLIST', 'ANTHROPIC_API_KEY']);
+    expect(missingCrosswordSecrets(['CREATOR_ALLOWLIST'])).toEqual(['ANTHROPIC_API_KEY']);
+    expect(missingCrosswordSecrets(['ANTHROPIC_API_KEY', 'CREATOR_ALLOWLIST'])).toEqual([]);
   });
 });
