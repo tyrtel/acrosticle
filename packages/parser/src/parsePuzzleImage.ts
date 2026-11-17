@@ -2,10 +2,11 @@ import { puzzleFromCompact, validatePuzzle, type ValidationIssue } from '@gridic
 import { AcrosticFile, validateWith } from '@gridicles/protocol';
 import type Anthropic from '@anthropic-ai/sdk';
 import { costUsd, type TokenUsage } from './pricing';
+import { apiErrorMessage, usageOf } from './claude';
 import { EXTRACTION_SCHEMA, SYSTEM_PROMPT } from './prompt';
 
-type StreamParams = Anthropic.Beta.Messages.MessageCreateParamsStreaming;
-type Message = Anthropic.Beta.Messages.BetaMessage;
+export type StreamParams = Anthropic.Beta.Messages.MessageCreateParamsStreaming;
+export type Message = Anthropic.Beta.Messages.BetaMessage;
 
 /**
  * Sends one request to Claude and resolves with the final message. Injected so
@@ -216,31 +217,4 @@ function readExtraction(
     ? value.notes.filter((note): note is string => typeof note === 'string' && note.trim() !== '')
     : [];
   return { ok: true, file: file.value, notes, issues: validatePuzzle(converted.puzzle) };
-}
-
-function usageOf(message: Message): TokenUsage {
-  return {
-    inputTokens: message.usage.input_tokens,
-    outputTokens: message.usage.output_tokens,
-    cacheWriteTokens: message.usage.cache_creation_input_tokens ?? 0,
-    cacheReadTokens: message.usage.cache_read_input_tokens ?? 0,
-  };
-}
-
-function apiErrorMessage(error: unknown): string {
-  const status =
-    typeof error === 'object' && error !== null && 'status' in error
-      ? (error as { status?: unknown }).status
-      : undefined;
-  if (error instanceof Error && error.name === 'AbortError')
-    return 'Reading the puzzle was cancelled.';
-  if (status === 401 || status === 403)
-    return "Image parsing isn't set up correctly on this server.";
-  if (status === 429) return 'Image parsing is busy right now. Please try again in a minute.';
-  if (status === 529 || (typeof status === 'number' && status >= 500)) {
-    return 'The image service is temporarily unavailable. Please try again soon.';
-  }
-  if (status === 400 || status === 413)
-    return "This image couldn't be processed. Try a smaller or clearer image.";
-  return "Couldn't reach the image service. Please try again.";
 }

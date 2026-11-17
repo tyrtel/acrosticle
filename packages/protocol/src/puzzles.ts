@@ -20,3 +20,18 @@ export const ParsePuzzleResponse = z.object({
   costUsd: z.number().nullable(),
 });
 export type ParsePuzzleResponse = z.infer<typeof ParsePuzzleResponse>;
+
+const clue = z.object({ number: z.number().int().positive(), text: z.string() });
+
+/** Body of `POST /api/crosswords/clues`: messy clue text for Claude to sort into clues. */
+export const TidyCluesRequest = z.object({ text: z.string().trim().min(1).max(30_000) });
+export type TidyCluesRequest = z.infer<typeof TidyCluesRequest>;
+
+/** Response to `POST /api/crosswords/clues`. */
+export const TidyCluesResponse = z.object({
+  clues: z.object({ across: z.array(clue), down: z.array(clue) }),
+  /** What Claude was unsure about. */
+  notes: z.array(z.string()),
+  costUsd: z.number().nullable(),
+});
+export type TidyCluesResponse = z.infer<typeof TidyCluesResponse>;

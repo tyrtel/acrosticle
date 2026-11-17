@@ -1,7 +1,8 @@
 import { blankCrossword, crosswordFromFile, type Crossword } from '@gridicles/crossword';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeBackend } from '../../../tests/support/fakeBackend';
 import mini from '../../../../../samples/puzzles/gridicles-mini-1.json';
 import { CrosswordEditor } from './CrosswordEditor';
 
@@ -84,5 +85,42 @@ describe('CrosswordEditor', () => {
     await user.click(square(1, 2));
     expect(start()).toBeDisabled();
     expect(screen.getByText(/needs at least one open square/)).toBeInTheDocument();
+  });
+});
+
+describe('Tidy with Claude', () => {
+  let backend: FakeBackend;
+  beforeEach(() => {
+    backend = new FakeBackend();
+    backend.install();
+  });
+
+  it('swaps messy text for tidied clues, shows what Claude was unsure of, and can put it back', async () => {
+    backend.tidyReply = {
+      status: 200,
+      body: {
+        clues: { across: [{ number: 1, text: 'Fuel at the pump' }], down: [] },
+        notes: ['Left out a page number.'],
+        costUsd: 0.001,
+      },
+    };
+    const { user } = setup();
+    await user.clear(clueBox());
+    await user.type(clueBox(), 'p.12 1 Fuel at the pump');
+    await user.click(screen.getByRole('button', { name: 'Tidy with Claude' }));
+
+    expect(await screen.findByText('Left out a page number.')).toBeInTheDocument();
+    expect(backend.tidiedTexts).toEqual(['p.12 1 Fuel at the pump']);
+    expect(clueBox()).toHaveValue('ACROSS\n1. Fuel at the pump\n\nDOWN');
+
+    await user.click(screen.getByRole('button', { name: 'Put my text back' }));
+    expect(clueBox()).toHaveValue('p.12 1 Fuel at the pump');
+  });
+
+  it('explains when tidying fails, keeping the text', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Tidy with Claude' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent("Tidying clues isn't set up");
+    expect((clueBox() as HTMLTextAreaElement).value).toMatch(/^ACROSS/);
   });
 });

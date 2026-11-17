@@ -6,11 +6,18 @@ import {
   IMAGE_MEDIA_TYPES,
   isEffort,
   parsePuzzleImage,
+  tidyClues,
   type Effort,
   type ClaudeSender,
   type ImageMediaType,
 } from '@gridicles/parser';
-import type { ApiError, ParsePuzzleResponse } from '@gridicles/protocol';
+import {
+  TidyCluesRequest,
+  validateWith,
+  type ApiError,
+  type ParsePuzzleResponse,
+  type TidyCluesResponse,
+} from '@gridicles/protocol';
 import Anthropic from '@anthropic-ai/sdk';
 import { Buffer } from 'node:buffer';
 import { canCreate, getCurrentUser } from './auth';
@@ -108,6 +115,84 @@ export async function parsePuzzle(
     costUsd: outcome.costUsd,
   };
   return Response.json(body);
+}
+
+/**
+ * `POST /api/crosswords/clues`: sorts messy pasted clue text into Across and Down clues with
+ * Claude (the editor's "Tidy with Claude"). Same rules as reading images: allowlisted creators,
+ * the same hourly limit and daily budget, and every run logged for cost review.
+ */
+export async function tidyClueText(
+  request: Request,
+  env: Env,
+  sender?: ClaudeSender,
+  now = Date.now(),
+): Promise<Response> {
+  const user = await getCurrentUser(request, env);
+  if (!user) return apiError(401, 'Sign in to tidy clues.');
+  if (!canCreate(user, env)) {
+    return apiError(
+      403,
+      `Your account (${user.email}) isn't enabled for creating puzzles yet. Ask the site owner to add it.`,
+    );
+  }
+  const apiKey = anthropicApiKey(env);
+  if (!apiKey && !sender) return apiError(503, "Tidying clues isn't set up on this server.");
+
+  let json: unknown;
+  try {
+    json = await request.json();
+  } catch {
+    return apiError(400, 'Send the clue text as JSON.');
+  }
+  const parsed = validateWith(TidyCluesRequest, json);
+  if (!parsed.ok) return apiError(400, 'Paste some clue text (30,000 characters at most).');
+
+  const limited = await overLimits(env, user.id, now);
+  if (limited) return limited;
+
+  const send = sender ?? anthropicSender(new Anthropic({ apiKey }));
+  // Sorting text is easy: low effort on the configured (cheap) model.
+  const outcome = await tidyClues(send, parsed.value.text, {
+    model: parseSettings(env).model,
+    effort: 'low',
+  });
+  await recordParseRun(env.DB, {
+    userId: user.id,
+    createdAt: now,
+    outcome: outcome.ok ? 'ok' : outcome.reason,
+    model: outcome.model ?? null,
+    inputTokens: (outcome.usage?.inputTokens ?? 0) + (outcome.usage?.cacheReadTokens ?? 0),
+    outputTokens: outcome.usage?.outputTokens ?? 0,
+    costUsd: outcome.costUsd ?? 0,
+    durationMs: outcome.durationMs ?? null,
+  });
+  if (!outcome.ok) return apiError(outcome.reason === 'api-error' ? 502 : 422, outcome.message);
+
+  const body: TidyCluesResponse = {
+    clues: {
+      across: [...outcome.clues.across],
+      down: [...outcome.clues.down],
+    },
+    notes: [...outcome.notes],
+    costUsd: outcome.costUsd,
+  };
+  return Response.json(body);
+}
+
+/** A 429 if this person or today's budget has hit the limits shared by all Claude features. */
+async function overLimits(env: Env, userId: string, now: number): Promise<Response | null> {
+  if ((await countParsesSince(env.DB, userId, now - HOUR_MS)) >= PARSES_PER_HOUR) {
+    return apiError(
+      429,
+      `You've used Claude ${PARSES_PER_HOUR} times in the last hour. Please try again later.`,
+    );
+  }
+  const budget = Number(env.PARSE_DAILY_BUDGET_USD) || 0;
+  if ((await parseSpendSince(env.DB, startOfUtcDay(now))) >= budget) {
+    return apiError(429, "Today's Claude budget is used up. Please try again tomorrow.");
+  }
+  return null;
 }
 
 /** The model and effort to use, from Worker settings (PARSE_MODEL, PARSE_EFFORT). */

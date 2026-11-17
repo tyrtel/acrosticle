@@ -274,8 +274,9 @@ even a clean file, goes through the editor so the creator checks it first.
 - **Photo parsing:** one photo with grid and clues (combine pages first if needed). Claude reads the
   size, black squares and clue text into the editor.
 - **Creating any puzzle needs an allowlisted account** (acrostic or crossword), as now.
-- Order: (A) editor + local clue reading, (B) "Tidy with Claude", (C) photo parsing with an accuracy
-  check.
+- Order: (A) editor + local clue reading ✅, (B) "Tidy with Claude" ✅ (2026-11-17: low effort on
+  `PARSE_MODEL`, shares the hourly limit and daily budget with image reading), (C) photo parsing
+  with an accuracy check.
 
 ## Still open
 

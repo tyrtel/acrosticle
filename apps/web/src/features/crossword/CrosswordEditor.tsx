@@ -12,6 +12,7 @@ import {
 import { useId, useMemo, useState } from 'react';
 import { PuzzleGrid, type GridLayout, type SquareView } from '../../components/PuzzleGrid';
 import styles from './CrosswordEditor.module.css';
+import { tidyClueText } from './tidyApi';
 
 export interface CrosswordEditorProps {
   /** The crossword to start from: an import, a photo's draft, or a blank grid. */
@@ -41,6 +42,13 @@ export function CrosswordEditor({ initial, onStart, starting = false }: Crosswor
   const [title, setTitle] = useState(initial.title ?? '');
   const [author, setAuthor] = useState(initial.author ?? '');
   const [clueText, setClueText] = useState(() => formatClueText(initial.clues));
+  const [tidy, setTidy] = useState<{
+    readonly busy: boolean;
+    readonly error?: string;
+    readonly notes?: readonly string[];
+    /** The text before tidying, to put back. */
+    readonly before?: string;
+  }>({ busy: false });
   const ids = useId();
 
   const parsed = useMemo(() => parseClueText(clueText), [clueText]);
@@ -56,6 +64,19 @@ export function CrosswordEditor({ initial, onStart, starting = false }: Crosswor
   const index = useMemo(() => buildCrosswordIndex(crossword), [crossword]);
   const issues = useMemo(() => validateCrossword(index), [index]);
   const warnings = [...parsed.problems.map((p) => p.message), ...issues.map((i) => i.message)];
+
+  /** Sends the clue text to Claude and swaps in the tidied clues (keeping the original to restore). */
+  const tidyWithClaude = async () => {
+    const before = clueText;
+    setTidy({ busy: true });
+    const result = await tidyClueText(before);
+    if (result.ok) {
+      setClueText(formatClueText(result.value.clues));
+      setTidy({ busy: false, notes: result.value.notes, before });
+    } else {
+      setTidy({ busy: false, error: result.error });
+    }
+  };
 
   const edit = (next: Crossword) => {
     setHistory((h) => ({ past: [...h.past, grid], future: [] }));
@@ -180,6 +201,44 @@ export function CrosswordEditor({ initial, onStart, starting = false }: Crosswor
         spellCheck={false}
         onChange={(e) => setClueText(e.target.value)}
       />
+      <div className={styles.tidy}>
+        <button
+          type="button"
+          disabled={tidy.busy || clueText.trim() === ''}
+          onClick={() => void tidyWithClaude()}
+        >
+          {tidy.busy ? 'Tidying…' : 'Tidy with Claude'}
+        </button>
+        {tidy.before !== undefined && !tidy.busy && (
+          <button
+            type="button"
+            onClick={() => {
+              setClueText(tidy.before ?? '');
+              setTidy({ busy: false });
+            }}
+          >
+            Put my text back
+          </button>
+        )}
+        <span className={styles.note}>
+          For messy text (from a PDF or web page): Claude sorts it into clues.
+        </span>
+      </div>
+      {tidy.error && (
+        <p role="alert" className="error">
+          {tidy.error}
+        </p>
+      )}
+      {tidy.notes && tidy.notes.length > 0 && (
+        <div className={styles.issues} aria-live="polite">
+          <h3>Claude wasn’t sure about</h3>
+          <ul>
+            {tidy.notes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {warnings.length > 0 && (
         <div className={styles.issues}>

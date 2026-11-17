@@ -12,7 +12,7 @@ import { appOrigin, canCreate, canStartSample, getCurrentUser } from './auth';
 import { finishGoogleSignIn, logout, me, myRooms, startGoogleSignIn } from './authRoutes';
 import { deleteRoomRecords, recordRoom, recordVisit, roomCreator } from './db';
 import { ROOM_ID_HEADER } from './room/PuzzleRoom';
-import { parsePuzzle } from './parsing';
+import { parsePuzzle, tidyClueText } from './parsing';
 import { newRoomId } from './roomId';
 import { checkPuzzle } from './puzzleKinds';
 import { SAMPLE_PUZZLES } from './samples';
@@ -57,6 +57,8 @@ export async function route(
       return myRooms(request, env);
     case 'POST /api/puzzles/parse':
       return parsePuzzle(request, env);
+    case 'POST /api/crosswords/clues':
+      return tidyClueText(request, env);
   }
 
   const roomMatch = ROOM_PATH.exec(url.pathname);
