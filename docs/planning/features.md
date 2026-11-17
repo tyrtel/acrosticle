@@ -14,6 +14,7 @@ Milestones M1–M4 are done and deployed; M5 (image parsing) and M6 (polish) are
 | F6  | Typing on phones, and with dead keys / input methods        | Medium | ✅ Done (2026-11-10) |
 | F7  | Undo and Redo (buttons, Ctrl/⌘+Z, Ctrl/⌘+Shift+Z, Ctrl+Y)   | Medium | ✅ Done (2026-11-10) |
 | F8  | Highlight squares green, shared with the room               | Medium | ✅ Done (2026-11-17) |
+| F9  | Copy the whole puzzle to the clipboard for Google Sheets    | Medium | Built (2026-11-17)   |
 
 ## F1. Start a new puzzle from anywhere
 
@@ -137,6 +138,24 @@ toggles any square or blank without moving the cursor, and a Highlight button co
 or the acrostic, and don't bump the room version. A highlighted square that's also selected keeps a
 green ring inside the yellow. Protocol version 3 (`cell/mark` → `cell/marked`, snapshot `marks`);
 older tabs are told to reload and are sent no highlights.
+
+## F9. Copy to Sheet
+
+**Built (2026-11-17), checking in real Google Sheets:** a "Copy to Sheet" button in the room bar copies
+the whole puzzle as an HTML table (plus tab-separated text for other apps), laid out with one narrow
+column per square:
+
+- the labels grid ("21A"), with the letters grid under it;
+- the clues to the right, each merged over two rows, followed by its answer letters, with their square
+  numbers underneath;
+- black squares, punctuation and green highlights kept; cursors and the selection left out;
+- answer letters hold the values, and each letters-grid square is a formula pointing at its answer
+  letter, so solving in the sheet fills both, like the app. Multi-character entries stay whole.
+
+Decided: option A of three (clipboard, rather than creating the sheet through the Sheets API or
+downloading an .xlsx). No extras (title, acrostic row, progress) for now. Open: whether Sheets keeps the
+suggested column widths and the formulas (written with the `data-sheets-formula` attribute Sheets itself
+uses). If widths don't carry over, select all columns and resize them once.
 
 ## F6. Typing without key presses (was: M6, with the mobile keyboard)
 

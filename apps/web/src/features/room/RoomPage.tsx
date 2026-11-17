@@ -1,6 +1,7 @@
 import { MAX_NAME_LENGTH, type RoomInfoResponse } from '@acrosticle/protocol';
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { useSession } from '../account';
+import { CopyToSheetButton } from '../sheetCopy';
 import { Solver } from '../solver';
 import styles from './Room.module.css';
 import { getRoomInfo } from './roomApi';
@@ -131,6 +132,7 @@ function Room({ roomId, name, createSocket }: RoomProps) {
       <div className={styles.bar}>
         <ConnectionBadge status={state.connection} />
         <ShareLink />
+        <CopyToSheetButton puzzle={state.puzzle} solve={solve} marks={marks} />
         <ul className={styles.members} aria-label="People in this room">
           {state.members.map((member) => (
             <li key={member.id} className={styles.member}>
